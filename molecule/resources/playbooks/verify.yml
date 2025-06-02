@@ -1,6 +1,5 @@
 # role: jomrr.httpd
 # file: molecule/resources/playbooks/verify.yml
-# code: language=ansible-jinja
 
 - name: "PLAYBOOK | Verify | httpd"
   hosts: all

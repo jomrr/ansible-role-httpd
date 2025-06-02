@@ -1,4 +1,4 @@
-# Ansible role apache
+# Ansible role httpd
 
 ![GitHub](https://img.shields.io/github/license/jomrr/ansible-role-httpd) ![GitHub last commit](https://img.shields.io/github/last-commit/jomrr/ansible-role-httpd) ![GitHub issues](https://img.shields.io/github/issues-raw/jomrr/ansible-role-httpd)
 
@@ -12,7 +12,7 @@ Install apache httpd from os repositories and configure
   - reverse proxy
   - TLS
   - virtual hosts
-for version 2.4 or greater. The role will not work with version 2.2.
+for version 2.4 or greater.
 
 ## Prerequisites
 
@@ -20,12 +20,11 @@ This role has no special prerequisites.
 
 ### System packages (Fedora)
 
-- `python3` (Python 3.8 or later)
-- `httpd (>= 2.4)`
+- `python3` (>= 3.9)
 
 ### Python (requirements.txt)
 
-- ansible >= 2.15
+- ansible >= 2.17
 
 ## Dependencies (requirements.yml)
 
@@ -35,14 +34,8 @@ This role has no dependencies.
 
 | OS Family | Distribution | Version | Container Image |
 |-----------|--------------|---------|-----------------|
-| RedHat | AlmaLinux | latest | [jomrr/molecule-almalinux:latest]( https://hub.docker.com/r/jomrr/molecule-almalinux ) |
-| Alpine | Alpine | latest | [jomrr/molecule-alpine:latest]( https://hub.docker.com/r/jomrr/molecule-alpine ) |
-| Archlinux | Archlinux | latest | [jomrr/molecule-archlinux:latest]( https://hub.docker.com/r/jomrr/molecule-archlinux ) |
 | Debian | Debian | latest | [jomrr/molecule-debian:latest]( https://hub.docker.com/r/jomrr/molecule-debian ) |
 | RedHat | Fedora | latest | [jomrr/molecule-fedora:latest]( https://hub.docker.com/r/jomrr/molecule-fedora ) |
-| Suse | OpenSuse Leap | latest | [jomrr/molecule-opensuse-leap:latest]( https://hub.docker.com/r/jomrr/molecule-opensuse-leap ) |
-| Suse | OpenSuse Tumbleweed | latest | [jomrr/molecule-opensuse-tumbleweed:latest]( https://hub.docker.com/r/jomrr/molecule-opensuse-tumbleweed ) |
-| Debian | Ubuntu | latest | [jomrr/molecule-ubuntu:latest]( https://hub.docker.com/r/jomrr/molecule-ubuntu ) |
 
 ## Role Variables
 
@@ -54,17 +47,17 @@ Example playbooks(s) that show how to use this role.
 
 ## Simple example playbook
 
-A simple default example playbook for using jomrr.apache.
+A simple default example playbook for using jomrr.httpd.
 ```yaml
 ---
-# name: "jomrr.apache"
-# file: "playbook_apache.yml"
+# name: "jomrr.httpd"
+# file: "playbook_httpd.yml"
 
-- name: "PLAYBOOK | apache"
-  hosts: "apache_hosts"
+- name: "PLAYBOOK | httpd"
+  hosts: "httpd_hosts"
   gather_facts: true
   roles:
-    - role: "jomrr.apache"
+    - role: "jomrr.httpd"
 ```
 
 ## Author(s) and License

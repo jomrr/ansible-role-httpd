@@ -1,5 +1,5 @@
 ---
-# role: jomrr.httpd
+# role: jomrr.ansible-role-httpd
 # file: molecule/default/molecule.yml
 
 scenario:

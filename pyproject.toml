@@ -1,5 +1,5 @@
 [project]
-name = "apache"
+name = "httpd"
 version = "0.0.0"
 description = "Ansible role for setting up apache httpd."
 authors = ["Jonas Mauer"]

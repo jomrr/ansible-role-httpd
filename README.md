@@ -142,6 +142,7 @@ Managed configuration and default-deny certificate changes notify the `httpd_rel
 - Listener address and port endpoints in `httpd_listen` must be unique.
 - `httpd_custom_logs` entries require exactly one target (`file` or `pipe`), exactly one format (`format_name` or `format_string`), and optionally one condition (`env` or `expr`).
 - Add optional modules through `httpd_extra_modules`; required packages belong in `httpd_extra_packages`.
+- Rendered `httpd_extra_modules` names must be unique and must not duplicate role-required module names.
 - On SUSE-family systems, the MPM is selected through `/etc/sysconfig/apache2`.
 
 ## Supported Platforms

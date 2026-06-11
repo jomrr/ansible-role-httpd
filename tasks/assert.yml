@@ -2,7 +2,7 @@
 # role: httpd
 # file: tasks/assert.yml
 
-- name: Assert httpd listener policy
+- name: "HTTPD | Assert listener policy"
   ansible.builtin.assert:
     quiet: true
     that:
@@ -11,7 +11,7 @@
   tags:
     - httpd_assert
 
-- name: Assert rendered httpd LoadModule names are unique
+- name: "HTTPD | Assert rendered LoadModule names are unique"
   ansible.builtin.assert:
     quiet: true
     that:
@@ -44,7 +44,7 @@
   tags:
     - httpd_assert
 
-- name: Assert httpd custom log model
+- name: "HTTPD | Assert custom log model"
   ansible.builtin.assert:
     quiet: true
     that:
@@ -79,7 +79,7 @@
   tags:
     - httpd_assert
 
-- name: Assert httpd vhost file definitions
+- name: "HTTPD | Assert vhost file definitions"
   ansible.builtin.assert:
     quiet: true
     that:
@@ -105,7 +105,7 @@
   tags:
     - httpd_assert
 
-- name: Assert httpd vhost file names are unique
+- name: "HTTPD | Assert vhost file names are unique"
   ansible.builtin.assert:
     quiet: true
     that:

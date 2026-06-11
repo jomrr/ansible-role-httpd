@@ -97,19 +97,19 @@ The following variables are part of the public role interface.
 - `/etc/httpd/managed/conf.d/00-listen.conf`
 - `/etc/httpd/managed/conf.d/00-tls.conf`
 - `/etc/httpd/managed/vhost.d/000-default-deny.conf`
-- `/etc/httpd/managed/vhost.d/*.conf for declared `httpd_vhost_files``
-- `/etc/httpd/managed/tls/certs/httpd-default-deny.crt when HTTPS listeners are configured`
-- `/etc/httpd/managed/tls/private/httpd-default-deny.key when HTTPS listeners are configured`
-- `/etc/httpd/managed/tls/csr/httpd-default-deny.csr when HTTPS listeners are configured`
-- `/etc/apache2/apache2.conf or /etc/apache2/httpd.conf`
+- `/etc/httpd/managed/vhost.d/*.conf` for declared `httpd_vhost_files`
+- `/etc/httpd/managed/tls/certs/httpd-default-deny.crt` when HTTPS listeners are configured
+- `/etc/httpd/managed/tls/private/httpd-default-deny.key` when HTTPS listeners are configured
+- `/etc/httpd/managed/tls/csr/httpd-default-deny.csr` when HTTPS listeners are configured
+- `/etc/apache2/apache2.conf` or `/etc/apache2/httpd.conf`
 - `/etc/apache2/managed/modules.d/00-modules.conf`
 - `/etc/apache2/managed/conf.d/00-listen.conf`
 - `/etc/apache2/managed/conf.d/00-tls.conf`
 - `/etc/apache2/managed/vhost.d/000-default-deny.conf`
-- `/etc/apache2/managed/vhost.d/*.conf for declared `httpd_vhost_files``
-- `/etc/apache2/managed/tls/certs/httpd-default-deny.crt when HTTPS listeners are configured`
-- `/etc/apache2/managed/tls/private/httpd-default-deny.key when HTTPS listeners are configured`
-- `/etc/apache2/managed/tls/csr/httpd-default-deny.csr when HTTPS listeners are configured`
+- `/etc/apache2/managed/vhost.d/*.conf` for declared `httpd_vhost_files`
+- `/etc/apache2/managed/tls/certs/httpd-default-deny.crt` when HTTPS listeners are configured
+- `/etc/apache2/managed/tls/private/httpd-default-deny.key` when HTTPS listeners are configured
+- `/etc/apache2/managed/tls/csr/httpd-default-deny.csr` when HTTPS listeners are configured
 
 ## Check Mode
 

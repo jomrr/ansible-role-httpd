@@ -46,6 +46,8 @@ validates the effective configuration, and enables and starts the Apache service
 
 ```yaml
 collections:
+  - name: community.general
+    version: '>=12.0.0'
   - name: community.crypto
     version: '>=2.0.0'
 ```

@@ -9,12 +9,12 @@
     __httpd_verify_role_path: "{{ lookup('ansible.builtin.env', 'MOLECULE_PROJECT_DIRECTORY') }}"
 
   tasks:
-    - name: Load httpd role defaults for verification
+    - name: "HTTPD | Load role defaults for verification"
       ansible.builtin.include_vars:
         file: "{{ __httpd_verify_role_path }}/defaults/main.yml"
         name: __httpd_verify_role_defaults
 
-    - name: Set httpd verification listener facts
+    - name: "HTTPD | Set verification listener facts"
       ansible.builtin.set_fact:
         __httpd_verify_default_vhost_server_name: >-
           {{
@@ -30,7 +30,7 @@
             | length > 0
           }}
 
-    - name: Assert default-deny HTTP host is forbidden
+    - name: "HTTPD | Assert default-deny HTTP host is forbidden"
       ansible.builtin.uri:
         url: "http://{{ item.address | default('127.0.0.1') }}:{{ item.port }}/"
         headers:
@@ -43,7 +43,7 @@
       when:
         - item.protocol is not defined or item.protocol == 'http'
 
-    - name: Assert managed application vhost redirects
+    - name: "HTTPD | Assert managed application vhost redirects"
       ansible.builtin.uri:
         url: "http://127.0.0.1:8080/"
         headers:
@@ -53,12 +53,12 @@
           - 301
       register: __httpd_verify_redirect
 
-    - name: Assert managed application vhost redirect target
+    - name: "HTTPD | Assert managed application vhost redirect target"
       ansible.builtin.assert:
         that:
           - __httpd_verify_redirect.location == 'https://molecule.example/'
 
-    - name: Assert unknown HTTP host is rejected or denied
+    - name: "HTTPD | Assert unknown HTTP host is rejected or denied"
       ansible.builtin.uri:
         url: "http://127.0.0.1:8080/"
         headers:
@@ -67,7 +67,7 @@
           - 400
           - 403
 
-    - name: Assert default-deny HTTPS endpoint completes TLS and denies or rejects the request
+    - name: "HTTPD | Assert default-deny HTTPS endpoint completes TLS and denies or rejects the request"
       ansible.builtin.uri:
         url: "https://127.0.0.1:8443/"
         validate_certs: false

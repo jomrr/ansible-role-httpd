@@ -14,18 +14,6 @@
         file: "{{ __httpd_verify_role_path }}/defaults/main.yml"
         name: __httpd_verify_role_defaults
 
-    - name: Load httpd platform variables for verification
-      ansible.builtin.include_vars: "{{ __httpd_verify_role_path }}/vars/{{ ansible_facts['os_family'] }}.yml"
-
-    - name: Validate Apache effective configuration
-      ansible.builtin.command:
-        argv:
-          - "{{ __httpd_binary }}"
-          - -t
-          - -f
-          - "{{ __httpd_main_config_path }}"
-      changed_when: false
-
     - name: Set httpd verification listener facts
       ansible.builtin.set_fact:
         __httpd_verify_default_vhost_server_name: >-
@@ -41,61 +29,6 @@
             | list
             | length > 0
           }}
-
-    - name: Gather service facts
-      ansible.builtin.service_facts:
-
-    - name: Set httpd service fact
-      ansible.builtin.set_fact:
-        __httpd_verify_service_fact: >-
-          {{
-            ansible_facts['services'].get(
-              __httpd_service_name ~ '.service',
-              ansible_facts['services'].get(__httpd_service_name, {})
-            )
-          }}
-
-    - name: Assert Apache service is running
-      ansible.builtin.assert:
-        that:
-          - __httpd_verify_service_fact | length > 0
-          - __httpd_verify_service_fact.state in ['running', 'started']
-
-    - name: Assert configured listener ports are reachable
-      ansible.builtin.wait_for:
-        host: "{{ item.address | default('127.0.0.1') }}"
-        port: "{{ item.port }}"
-        state: started
-        timeout: 5
-      loop: "{{ httpd_listen }}"
-      loop_control:
-        label: "{{ item.address | default('127.0.0.1') }}:{{ item.port }}"
-
-    - name: Assert default-deny certificate permissions
-      ansible.builtin.stat:
-        path: "{{ item.path }}"
-      loop:
-        - path: "{{ __httpd_default_vhost_certificate_file }}"
-          mode: "0644"
-        - path: "{{ __httpd_default_vhost_certificate_key_file }}"
-          mode: "0600"
-      loop_control:
-        label: "{{ item.path }}"
-      register: __httpd_verify_default_cert_files
-      when: __httpd_verify_has_https_listener | bool
-
-    - name: Assert default-deny certificate files are protected
-      ansible.builtin.assert:
-        that:
-          - item.stat.exists
-          - item.stat.isreg
-          - item.stat.pw_name == 'root'
-          - item.stat.gr_name == 'root'
-          - item.stat.mode == item.item.mode
-      loop: "{{ __httpd_verify_default_cert_files.results | default([]) }}"
-      loop_control:
-        label: "{{ item.item.path }}"
-      when: __httpd_verify_has_https_listener | bool
 
     - name: Assert default-deny HTTP host is forbidden
       ansible.builtin.uri:

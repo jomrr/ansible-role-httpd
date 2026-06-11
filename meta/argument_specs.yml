@@ -332,32 +332,6 @@ argument_specs:
           path:
             type: path
             required: false
-          enabled:
-            type: bool
-            required: false
-            default: true
-          os_families:
-            type: list
-            elements: str
-            required: false
-          distributions:
-            type: list
-            elements: str
-            required: false
-          when_mpm:
-            type: str
-            required: false
-            choices:
-              - event
-              - worker
-              - prefork
-      httpd_disabled_modules:
-        type: list
-        elements: str
-        required: false
-        default: []
-        description: Explicit extra module names to suppress from the rendered LoadModule
-          list.
       httpd_vhost_files:
         type: list
         elements: dict

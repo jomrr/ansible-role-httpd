@@ -160,12 +160,6 @@ httpd_extra_modules: []
 #     # Defines the shared object file relative to the platform module directory.
 #     file: mod_status.so
 
-# Suppresses explicitly configured extra modules from the rendered LoadModule list.
-httpd_disabled_modules: []
-# Example:
-# httpd_disabled_modules:
-#   - status_module
-
 # Defines complete Apache-native virtual host files written into the managed vhost directory.
 httpd_vhost_files: []
 # Example:

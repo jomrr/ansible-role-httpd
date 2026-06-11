@@ -86,7 +86,6 @@ The following variables are part of the public role interface.
 | `httpd_tls_use_stapling` | `str` | `false` | `Off` | Global SSLUseStapling directive. |
 | `httpd_tls_random_seeds` | `list` | `false` | - context: startup<br />  source: file:/dev/urandom<br />  bytes: 512<br />- context: connect<br />  source: builtin | Global SSLRandomSeed directives. The bytes key is optional and must be omitted for source=builtin. |
 | `httpd_extra_modules` | `list` | `false` | [] | Additional Apache modules rendered after the role-required module set. |
-| `httpd_disabled_modules` | `list` | `false` | [] | Explicit extra module names to suppress from the rendered LoadModule list. |
 | `httpd_vhost_files` | `list` | `false` | [] | Complete Apache-native virtual host files written into the managed vhost directory. |
 
 ## Managed Files
@@ -142,7 +141,7 @@ Managed configuration and default-deny certificate changes notify the `httpd_rel
 - Listener address and port endpoints in `httpd_listen` must be unique.
 - `httpd_custom_logs` entries require exactly one target (`file` or `pipe`), exactly one format (`format_name` or `format_string`), and optionally one condition (`env` or `expr`).
 - Add optional modules through `httpd_extra_modules`; required packages belong in `httpd_extra_packages`.
-- Rendered `httpd_extra_modules` names must be unique and must not duplicate role-required module names.
+- `httpd_extra_modules` names must be unique and must not duplicate role-required module names.
 - On SUSE-family systems, the MPM is selected through `/etc/sysconfig/apache2`.
 
 ## Supported Platforms

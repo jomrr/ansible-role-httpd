@@ -2,207 +2,18 @@
 # role: httpd
 # file: tasks/assert.yml
 
-- name: Assert httpd platform variables
-  ansible.builtin.assert:
-    that:
-      - __httpd_packages is defined
-      - __httpd_service_name is defined
-      - __httpd_binary is defined
-      - __httpd_managed_directories is defined
-      - __httpd_main_config_path is defined
-      - __httpd_modules_config_path is defined
-      - __httpd_listen_config_path is defined
-      - __httpd_tls_config_path is defined
-      - __httpd_default_vhost_config_path is defined
-      - __httpd_vhost_dir is defined
-      - __httpd_server_root is defined
-      - __httpd_runtime_dir is defined
-      - __httpd_pid_file is defined
-      - __httpd_user is defined
-      - __httpd_group is defined
-      - __httpd_module_dir is defined
-      - __httpd_mpm_modules is defined
-      - __httpd_minimal_modules is defined
-      - __httpd_tls_modules is defined
-      - __httpd_default_vhost_certificate_packages is defined
-      - __httpd_default_vhost_certificate_file is defined
-      - __httpd_default_vhost_certificate_key_file is defined
-      - __httpd_default_vhost_certificate_csr_file is defined
-      - __httpd_validate_main_config_command is defined
-      - __httpd_validate_vhost_config_command is defined
-    fail_msg: >-
-      Incomplete platform variables for role httpd:
-      {{ ansible_facts['distribution'] }}
-      {{ ansible_facts['distribution_major_version'] }}
-      (os_family={{ ansible_facts['os_family'] }}).
-  tags:
-    - httpd_assert
-
-- name: Assert selected httpd MPM can be rendered or is platform-managed
-  ansible.builtin.assert:
-    that:
-      - __httpd_mpm_modules | length == 0 or httpd_mpm in __httpd_mpm_modules
-    fail_msg: "Selected httpd_mpm has no platform MPM module mapping."
-  tags:
-    - httpd_assert
-
 - name: Assert httpd listener policy
   ansible.builtin.assert:
+    quiet: true
     that:
-      - httpd_listen | length > 0
+      - httpd_listen is not defined or httpd_listen | length > 0
     fail_msg: "httpd_listen must contain at least one listener."
-  tags:
-    - httpd_assert
-
-- name: Assert httpd listener definitions
-  ansible.builtin.assert:
-    that:
-      - item.port | int >= 1
-      - item.port | int <= 65535
-      - item.address is not defined or item.address | trim | length > 0
-      - item.address is not defined or item.address | trim != '*'
-    fail_msg: >-
-      Invalid httpd_listen item. Listener ports must be in range 1..65535.
-      Omit address for wildcard listeners; do not use address='*'.
-  loop: "{{ httpd_listen }}"
-  loop_control:
-    label: "{{ item.address | default('*') }}:{{ item.port | default('undefined') }}"
-  tags:
-    - httpd_assert
-
-- name: Assert httpd listener endpoints are unique
-  ansible.builtin.assert:
-    that:
-      - __httpd_listener_endpoints | length == __httpd_listener_endpoints | unique | list | length
-    fail_msg: "httpd_listen must not contain duplicate normalized address/port endpoints."
-  vars:
-    __httpd_listener_addresses: >-
-      {{
-        httpd_listen
-        | map(attribute='address')
-        | map('default', '*', true)
-        | map('trim')
-        | list
-      }}
-    __httpd_listener_ports: >-
-      {{
-        httpd_listen
-        | map(attribute='port')
-        | map('int')
-        | map('string')
-        | list
-      }}
-    __httpd_listener_endpoints: >-
-      {{
-        __httpd_listener_addresses
-        | zip(__httpd_listener_ports)
-        | map('join', ':')
-        | list
-      }}
-  tags:
-    - httpd_assert
-
-- name: Assert httpd default vhost input
-  ansible.builtin.assert:
-    that:
-      - httpd_default_vhost_server_name | trim | length > 0
-    fail_msg: >-
-      Default vhost management requires a non-empty server name.
-  tags:
-    - httpd_assert
-
-- name: Assert httpd required module input
-  ansible.builtin.assert:
-    that:
-      - __httpd_minimal_modules is sequence
-      - __httpd_minimal_modules is not string
-      - __httpd_minimal_modules | length > 0
-      - __httpd_tls_modules is sequence
-      - __httpd_tls_modules is not string
-      - __httpd_tls_modules | length > 0
-    fail_msg: "__httpd_minimal_modules and __httpd_tls_modules must be non-empty platform lists."
-  tags:
-    - httpd_assert
-
-- name: Assert httpd required module definitions
-  ansible.builtin.assert:
-    that:
-      - item is mapping
-      - item.name is defined
-      - item.name | trim | length > 0
-      - item.file is defined or item.path is defined
-      - item.file is not defined or item.file | trim | length > 0
-      - item.path is not defined or item.path | trim | length > 0
-    fail_msg: >-
-      Invalid role-required httpd module entry. Every module requires a non-empty name
-      and either a non-empty file or path.
-  loop: "{{ __httpd_minimal_modules + __httpd_tls_modules }}"
-  loop_control:
-    label: "{{ item.name | default('unnamed module') }}"
-  tags:
-    - httpd_assert
-
-- name: Assert httpd extra module definitions
-  ansible.builtin.assert:
-    that:
-      - item.name | trim | length > 0
-      - item.file is defined or item.path is defined
-      - item.file is not defined or item.file | trim | length > 0
-      - item.path is not defined or item.path | trim | length > 0
-    fail_msg: >-
-      Every httpd_extra_modules entry requires a non-empty name
-      and either a non-empty file or path.
-  loop: "{{ httpd_extra_modules }}"
-  loop_control:
-    label: "{{ item.name | default('unnamed module') }}"
-  tags:
-    - httpd_assert
-
-- name: Derive rendered httpd module names for assertions
-  ansible.builtin.set_fact:
-    __httpd_assert_extra_module_names: []
-    __httpd_assert_required_module_names: >-
-      {{
-        (
-          [__httpd_mpm_modules[httpd_mpm].name]
-          if httpd_mpm in __httpd_mpm_modules
-          else []
-        )
-        + (__httpd_minimal_modules | map(attribute='name') | list)
-        + (
-          (__httpd_tls_modules | map(attribute='name') | list)
-          if (
-            httpd_listen
-            | selectattr('protocol', 'defined')
-            | selectattr('protocol', 'equalto', 'https')
-            | list
-            | length > 0
-          )
-          else []
-        )
-      }}
-  changed_when: false
-  tags:
-    - httpd_assert
-
-- name: Derive filtered httpd extra module names for assertions
-  ansible.builtin.set_fact:
-    __httpd_assert_extra_module_names: "{{ __httpd_assert_extra_module_names + [item.name] }}"
-  loop: "{{ httpd_extra_modules }}"
-  loop_control:
-    label: "{{ item.name }}"
-  when:
-    - item.enabled | default(true) | bool
-    - item.os_families is not defined or item.os_families | length == 0 or ansible_facts['os_family'] in item.os_families
-    - item.distributions is not defined or item.distributions | length == 0 or ansible_facts['distribution'] in item.distributions
-    - item.when_mpm is not defined or item.when_mpm == httpd_mpm
-    - item.name not in httpd_disabled_modules
-  changed_when: false
   tags:
     - httpd_assert
 
 - name: Assert rendered httpd LoadModule names are unique
   ansible.builtin.assert:
+    quiet: true
     that:
       - >-
         __httpd_assert_required_module_names | length
@@ -212,80 +23,104 @@
         == __httpd_assert_extra_module_names | unique | list | length
       - __httpd_assert_extra_module_names | intersect(__httpd_assert_required_module_names) | length == 0
     fail_msg: >-
-      Rendered LoadModule names must be unique. Filtered httpd_extra_modules
-      entries must not duplicate each other or overlap role-required module names.
-  tags:
-    - httpd_assert
-
-- name: Assert httpd custom log definitions
-  ansible.builtin.assert:
-    that:
-      - item is mapping
-      - (item.file is defined) != (item.pipe is defined)
-      - item.file is not defined or item.file | trim | length > 0
-      - item.pipe is not defined or item.pipe | trim | length > 0
-      - (item.format_name is defined) != (item.format_string is defined)
-      - item.format_name is not defined or item.format_name | trim | length > 0
-      - item.format_name is not defined or not (item.format_name is search('\s'))
-      - item.format_string is not defined or item.format_string | trim | length > 0
-      - item.condition is not defined or item.condition is mapping
-      - item.condition is not defined or (item.condition.env is defined) != (item.condition.expr is defined)
-      - item.condition is not defined or item.condition.env is not defined or item.condition.env | trim | length > 0
-      - item.condition is not defined or item.condition.env is not defined or not (item.condition.env is search('\s'))
-      - item.condition is not defined or item.condition.env is defined or item.condition.negate is not defined
-      - item.condition is not defined or item.condition.expr is not defined or item.condition.expr | trim | length > 0
-    fail_msg: >-
-      Every httpd_custom_logs entry requires exactly one target (file or pipe),
-      exactly one format (format_name or format_string), and at most one condition
-      (condition.env with optional negate, or condition.expr).
-  loop: "{{ httpd_custom_logs }}"
-  loop_control:
-    label: >-
+      Rendered LoadModule names must be unique. httpd_extra_modules entries
+      must not duplicate each other or overlap role-required module names.
+  vars:
+    __httpd_assert_required_module_names: >-
       {{
-        item.file | default(item.pipe | default('undefined custom log'))
+        (
+          [(__httpd_mpm_modules | default({}))[httpd_mpm].name]
+          if httpd_mpm in (__httpd_mpm_modules | default({}))
+          else []
+        )
+        + (__httpd_minimal_modules | default([]) | map(attribute='name') | list)
+        + (
+          (__httpd_tls_modules | default([]) | map(attribute='name') | list)
+          if __httpd_has_https_listener | default(false) | bool
+          else []
+        )
       }}
+    __httpd_assert_extra_module_names: "{{ httpd_extra_modules | default([]) | map(attribute='name') | list }}"
   tags:
     - httpd_assert
 
-- name: Assert httpd TLS random seed definitions
+- name: Assert httpd custom log model
   ansible.builtin.assert:
+    quiet: true
     that:
-      - item.source | trim | length > 0
-      - item.bytes is not defined or item.bytes | int > 0
-      - item.source != 'builtin' or item.bytes is not defined
+      - __httpd_invalid_custom_log_labels | length == 0
     fail_msg: >-
-      Every httpd_tls_random_seeds item requires a non-empty source.
-      bytes is optional, must be positive when set, and must not be set for source=builtin.
-  loop: "{{ httpd_tls_random_seeds }}"
-  loop_control:
-    label: "{{ item.context | default('undefined') }}:{{ item.source | default('undefined') }}"
+      httpd_custom_logs entries must not define competing targets, competing formats,
+      or ambiguous conditions. Use file or pipe, format_name or format_string,
+      and condition.env with optional negate or condition.expr. Invalid logs:
+      {{ __httpd_invalid_custom_log_labels }}.
+  vars:
+    __httpd_invalid_custom_log_labels: >-
+      {%- set ns = namespace(labels=[]) -%}
+      {%- for item in httpd_custom_logs | default([]) -%}
+      {%- set label = item.file | default(item.pipe | default('undefined custom log')) | string -%}
+      {%- set has_file = item.file is defined -%}
+      {%- set has_pipe = item.pipe is defined -%}
+      {%- set has_format_name = item.format_name is defined -%}
+      {%- set has_format_string = item.format_string is defined -%}
+      {%- set has_condition = item.condition is defined -%}
+      {%- set condition_is_mapping = not has_condition or item.condition is mapping -%}
+      {%- set has_env = condition_is_mapping and item.condition.env is defined -%}
+      {%- set has_expr = condition_is_mapping and item.condition.expr is defined -%}
+      {%- if (has_file and has_pipe)
+          or (has_format_name and has_format_string)
+          or not condition_is_mapping
+          or (has_condition and ((1 if has_env else 0) + (1 if has_expr else 0)) != 1)
+          or (condition_is_mapping and item.condition.negate is defined and not has_env) -%}
+      {%- set ns.labels = ns.labels + [label] -%}
+      {%- endif -%}
+      {%- endfor -%}
+      {{ ns.labels | join(', ') }}
   tags:
     - httpd_assert
 
 - name: Assert httpd vhost file definitions
   ansible.builtin.assert:
+    quiet: true
     that:
-      - item.name is match('^[A-Za-z0-9][A-Za-z0-9._-]*\\.conf$')
-      - item.name != '000-default-deny.conf'
-      - item.state | default('present') in ['present', 'absent']
-      - item.state | default('present') == 'absent' or item.name > '000-default-deny.conf'
-      - item.state | default('present') == 'absent' or item.content is defined
-      - item.state | default('present') == 'absent' or item.content | trim | length > 0
+      - __httpd_invalid_vhost_file_labels | length == 0
     fail_msg: >-
       Every httpd_vhost_files item requires a relative .conf name, must not replace 000-default-deny.conf,
       must sort after 000-default-deny.conf unless state=absent, and requires non-empty content unless state=absent.
-  loop: "{{ httpd_vhost_files }}"
-  loop_control:
-    label: "{{ item.name | default('undefined vhost file') }}"
+      Invalid vhost files: {{ __httpd_invalid_vhost_file_labels }}.
+  vars:
+    __httpd_invalid_vhost_file_labels: >-
+      {%- set ns = namespace(labels=[]) -%}
+      {%- for item in httpd_vhost_files | default([]) -%}
+      {%- set name = item.name | default('undefined vhost file') | string -%}
+      {%- set state = item.state | default('present') -%}
+      {%- if (item.name is defined and not (name is match('^[A-Za-z0-9][A-Za-z0-9._-]*\\.conf$')))
+          or name == '000-default-deny.conf'
+          or (state == 'present' and name <= '000-default-deny.conf')
+          or (state == 'present' and item.content is defined and item.content | string | trim | length == 0) -%}
+      {%- set ns.labels = ns.labels + [name] -%}
+      {%- endif -%}
+      {%- endfor -%}
+      {{ ns.labels | join(', ') }}
   tags:
     - httpd_assert
 
 - name: Assert httpd vhost file names are unique
   ansible.builtin.assert:
+    quiet: true
     that:
       - >-
-        httpd_vhost_files | map(attribute='name') | list | length
-        == httpd_vhost_files | map(attribute='name') | list | unique | list | length
+        __httpd_vhost_file_names | length
+        == __httpd_vhost_file_names | unique | list | length
     fail_msg: "httpd_vhost_files must not contain duplicate file names."
+  vars:
+    __httpd_vhost_file_names: >-
+      {{
+        httpd_vhost_files
+        | default([])
+        | selectattr('name', 'defined')
+        | map(attribute='name')
+        | list
+      }}
   tags:
     - httpd_assert

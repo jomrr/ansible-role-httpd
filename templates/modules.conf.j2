@@ -28,14 +28,5 @@ LoadModule {{ httpd_module.name }} {{ _httpd_module_path }}
 {% endfor %}
 {% endif %}
 {% for httpd_module in httpd_extra_modules %}
-{% set _httpd_module_os_families = httpd_module.os_families | default([]) %}
-{% set _httpd_module_distributions = httpd_module.distributions | default([]) %}
-{% set _httpd_module_enabled = httpd_module.enabled | default(true) | bool %}
-{% set _httpd_module_os_ok = _httpd_module_os_families | length == 0 or ansible_facts['os_family'] in _httpd_module_os_families %}
-{% set _httpd_module_distribution_ok = _httpd_module_distributions | length == 0 or ansible_facts['distribution'] in _httpd_module_distributions %}
-{% set _httpd_module_mpm_ok = httpd_module.when_mpm is not defined or httpd_module.when_mpm == httpd_mpm %}
-{% set _httpd_module_not_disabled = httpd_module.name not in httpd_disabled_modules %}
-{% if _httpd_module_enabled and _httpd_module_os_ok and _httpd_module_distribution_ok and _httpd_module_mpm_ok and _httpd_module_not_disabled %}
 {{ render_load_module(httpd_module) }}
-{% endif %}
 {% endfor %}

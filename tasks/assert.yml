@@ -70,6 +70,38 @@
   tags:
     - httpd_assert
 
+- name: Assert httpd listener endpoints are unique
+  ansible.builtin.assert:
+    that:
+      - __httpd_listener_endpoints | length == __httpd_listener_endpoints | unique | list | length
+    fail_msg: "httpd_listen must not contain duplicate normalized address/port endpoints."
+  vars:
+    __httpd_listener_addresses: >-
+      {{
+        httpd_listen
+        | map(attribute='address')
+        | map('default', '*', true)
+        | map('trim')
+        | list
+      }}
+    __httpd_listener_ports: >-
+      {{
+        httpd_listen
+        | map(attribute='port')
+        | map('int')
+        | map('string')
+        | list
+      }}
+    __httpd_listener_endpoints: >-
+      {{
+        __httpd_listener_addresses
+        | zip(__httpd_listener_ports)
+        | map('join', ':')
+        | list
+      }}
+  tags:
+    - httpd_assert
+
 - name: Assert httpd default vhost input
   ansible.builtin.assert:
     that:

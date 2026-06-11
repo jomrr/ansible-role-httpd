@@ -139,6 +139,7 @@ Managed configuration and default-deny certificate changes notify the `httpd_rel
 
 - Present application vhost files in `httpd_vhost_files` must use names sorting after `000-default-deny.conf`.
 - `httpd_listen` defaults to HTTP and HTTPS; mark additional HTTPS listeners with `protocol: https`.
+- Listener address and port endpoints in `httpd_listen` must be unique.
 - Add optional modules through `httpd_extra_modules`; required packages belong in `httpd_extra_packages`.
 - On SUSE-family systems, the MPM is selected through `/etc/sysconfig/apache2`.
 

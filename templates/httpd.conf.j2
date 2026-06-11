@@ -1,3 +1,19 @@
+{% macro httpd_quote(value) -%}
+"{{ value | string | replace('"', '\\"') }}"
+{%- endmacro %}
+{% macro httpd_custom_log_target(custom_log) -%}
+{{ httpd_quote(custom_log.file) if custom_log.file is defined else httpd_quote('|' ~ custom_log.pipe) }}
+{%- endmacro %}
+{% macro httpd_custom_log_format(custom_log) -%}
+{{ custom_log.format_name if custom_log.format_name is defined else httpd_quote(custom_log.format_string) }}
+{%- endmacro %}
+{% macro httpd_custom_log_condition(custom_log) -%}
+{% if custom_log.condition is defined and custom_log.condition.env is defined -%}
+ env={% if custom_log.condition.negate | default(false) | bool %}!{% endif %}{{ custom_log.condition.env }}
+{%- elif custom_log.condition is defined and custom_log.condition.expr is defined -%}
+ {{ httpd_quote('expr=' ~ custom_log.condition.expr) }}
+{%- endif %}
+{%- endmacro %}
 # role: httpd
 # file: {{ __httpd_main_config_path }}
 
@@ -49,11 +65,11 @@ LogLevel                {{ httpd_log_level }}
 
 <IfModule log_config_module>
 {% for httpd_log_format in httpd_log_formats %}
-    LogFormat "{{ httpd_log_format.format | replace('"', '\\"') }}" {{ httpd_log_format.name }}
+    LogFormat {{ httpd_quote(httpd_log_format.format) }} {{ httpd_log_format.name }}
 {% endfor %}
     CustomLog "{{ __httpd_access_log }}" combined
 {% for httpd_custom_log in httpd_custom_logs %}
-    CustomLog "{{ httpd_custom_log.path }}" {{ httpd_custom_log.format }}
+    CustomLog {{ httpd_custom_log_target(httpd_custom_log) }} {{ httpd_custom_log_format(httpd_custom_log) }}{{ httpd_custom_log_condition(httpd_custom_log) }}
 {% endfor %}
 </IfModule>
 

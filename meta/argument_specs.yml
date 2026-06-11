@@ -163,12 +163,32 @@ argument_specs:
         default: []
         description: Additional global CustomLog entries.
         options:
-          path:
+          file:
             type: path
-            required: true
-          format:
+            required: false
+          pipe:
             type: str
-            required: true
+            required: false
+          format_name:
+            type: str
+            required: false
+          format_string:
+            type: str
+            required: false
+          condition:
+            type: dict
+            required: false
+            options:
+              env:
+                type: str
+                required: false
+              negate:
+                type: bool
+                required: false
+                default: false
+              expr:
+                type: str
+                required: false
       httpd_directory_blocks:
         type: list
         elements: dict

@@ -74,10 +74,19 @@ httpd_log_formats:
 httpd_custom_logs: []
 # Example:
 # httpd_custom_logs:
-#   # Sets the log file path used by the CustomLog directive.
-#   - path: /var/log/httpd/example-access.log
-#     # Selects the log format nickname or inline format used by the CustomLog directive.
-#     format: combined
+#   # Writes to a regular log file.
+#   - file: /var/log/httpd/example-access.log
+#     # References a LogFormat nickname.
+#     format_name: combined
+#   # Sends log lines through a piped logger command.
+#   - pipe: /usr/bin/rotatelogs /var/log/httpd/example-access.%Y%m%d 86400
+#     # Defines an inline CustomLog format string.
+#     format_string: '%h %l %u %t "%r" %>s %b'
+#   # Adds an Apache env condition.
+#   - file: /var/log/httpd/example-errors.log
+#     format_name: combined
+#     condition:
+#       expr: "%{REQUEST_STATUS} >= 400"
 
 # Defines global Directory blocks; defaults deny filesystem access until virtual hosts explicitly allow it.
 httpd_directory_blocks:

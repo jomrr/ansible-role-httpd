@@ -158,6 +158,36 @@
   tags:
     - httpd_assert
 
+- name: Assert httpd custom log definitions
+  ansible.builtin.assert:
+    that:
+      - item is mapping
+      - (item.file is defined) != (item.pipe is defined)
+      - item.file is not defined or item.file | trim | length > 0
+      - item.pipe is not defined or item.pipe | trim | length > 0
+      - (item.format_name is defined) != (item.format_string is defined)
+      - item.format_name is not defined or item.format_name | trim | length > 0
+      - item.format_name is not defined or not (item.format_name is search('\s'))
+      - item.format_string is not defined or item.format_string | trim | length > 0
+      - item.condition is not defined or item.condition is mapping
+      - item.condition is not defined or (item.condition.env is defined) != (item.condition.expr is defined)
+      - item.condition is not defined or item.condition.env is not defined or item.condition.env | trim | length > 0
+      - item.condition is not defined or item.condition.env is not defined or not (item.condition.env is search('\s'))
+      - item.condition is not defined or item.condition.env is defined or item.condition.negate is not defined
+      - item.condition is not defined or item.condition.expr is not defined or item.condition.expr | trim | length > 0
+    fail_msg: >-
+      Every httpd_custom_logs entry requires exactly one target (file or pipe),
+      exactly one format (format_name or format_string), and at most one condition
+      (condition.env with optional negate, or condition.expr).
+  loop: "{{ httpd_custom_logs }}"
+  loop_control:
+    label: >-
+      {{
+        item.file | default(item.pipe | default('undefined custom log'))
+      }}
+  tags:
+    - httpd_assert
+
 - name: Assert httpd TLS random seed definitions
   ansible.builtin.assert:
     that:

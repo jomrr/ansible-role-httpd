@@ -140,6 +140,7 @@ Managed configuration and default-deny certificate changes notify the `httpd_rel
 - Present application vhost files in `httpd_vhost_files` must use names sorting after `000-default-deny.conf`.
 - `httpd_listen` defaults to HTTP and HTTPS; mark additional HTTPS listeners with `protocol: https`.
 - Listener address and port endpoints in `httpd_listen` must be unique.
+- `httpd_custom_logs` entries require exactly one target (`file` or `pipe`), exactly one format (`format_name` or `format_string`), and optionally one condition (`env` or `expr`).
 - Add optional modules through `httpd_extra_modules`; required packages belong in `httpd_extra_packages`.
 - On SUSE-family systems, the MPM is selected through `/etc/sysconfig/apache2`.
 
@@ -208,6 +209,33 @@ Apache-native vhost file for HTTP-to-HTTPS redirect and reverse proxying.
                   ProxyPass / http://127.0.0.1:3000/
                   ProxyPassReverse / http://127.0.0.1:3000/
               </VirtualHost>
+```
+### CustomLog examples
+
+Global Apache CustomLog entries with explicit targets, formats, and conditions.
+
+```yaml
+---
+- name: Configure Apache HTTP Server with additional access logs
+  hosts: httpd
+  gather_facts: true
+  roles:
+    - role: jomrr.httpd
+      vars:
+        httpd_custom_logs:
+          - file: /var/log/httpd/example-access.log
+            format_name: combined
+          - pipe: /usr/bin/rotatelogs /var/log/httpd/example-access.%Y%m%d 86400
+            format_string: '%h %l %u %t "%r" %>s %b'
+          - file: /var/log/httpd/example-non-local-referer.log
+            format_name: combined
+            condition:
+              env: localreferer
+              negate: true
+          - file: /var/log/httpd/example-errors.log
+            format_name: combined
+            condition:
+              expr: "%{REQUEST_STATUS} >= 400"
 ```
 
 ## Author

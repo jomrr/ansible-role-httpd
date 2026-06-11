@@ -65,6 +65,9 @@ __httpd_module_dir: /usr/lib/apache2/modules
 __httpd_validate_main_config_command: >-
   {{ __httpd_binary }} -t -f %s
 
+__httpd_validate_vhost_config_command: >-
+  {{ __httpd_binary }} -t -f {{ __httpd_main_config_path }} -c "Include %s"
+
 __httpd_mpm_modules:
   event:
     name: mpm_event_module

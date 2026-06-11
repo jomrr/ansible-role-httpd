@@ -29,6 +29,7 @@
       - __httpd_default_vhost_certificate_key_file is defined
       - __httpd_default_vhost_certificate_csr_file is defined
       - __httpd_validate_main_config_command is defined
+      - __httpd_validate_vhost_config_command is defined
     fail_msg: >-
       Incomplete platform variables for role httpd:
       {{ ansible_facts['distribution'] }}

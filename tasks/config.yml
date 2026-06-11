@@ -155,22 +155,6 @@
   tags:
     - httpd_config
 
-- name: Manage httpd application virtual host files
-  ansible.builtin.copy:
-    dest: "{{ __httpd_vhost_dir }}/{{ item.name }}"
-    content: |
-      {{ item.content | trim }}
-    owner: root
-    group: root
-    mode: "0644"
-  loop: "{{ httpd_vhost_files }}"
-  loop_control:
-    label: "{{ item.name }}"
-  when: item.state | default('present') == 'present'
-  notify: httpd_reload
-  tags:
-    - httpd_config
-
 - name: Manage httpd main configuration
   ansible.builtin.template:
     src: httpd.conf.j2
@@ -179,6 +163,23 @@
     group: root
     mode: "0644"
     validate: "{{ __httpd_validate_main_config_command if not ansible_check_mode else omit }}"
+  notify: httpd_reload
+  tags:
+    - httpd_config
+
+- name: Manage httpd application virtual host files
+  ansible.builtin.copy:
+    dest: "{{ __httpd_vhost_dir }}/{{ item.name }}"
+    content: |
+      {{ item.content | trim }}
+    owner: root
+    group: root
+    mode: "0644"
+    validate: "{{ __httpd_validate_vhost_config_command if not ansible_check_mode else omit }}"
+  loop: "{{ httpd_vhost_files }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: item.state | default('present') == 'present'
   notify: httpd_reload
   tags:
     - httpd_config

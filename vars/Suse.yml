@@ -66,6 +66,9 @@ __httpd_module_dir: "/usr/lib64/apache2-{{ httpd_mpm }}"
 __httpd_validate_main_config_command: >-
   {{ __httpd_binary }} -t -f %s
 
+__httpd_validate_vhost_config_command: >-
+  {{ __httpd_binary }} -t -f {{ __httpd_main_config_path }} -c "Include %s"
+
 # SUSE selects the MPM through /etc/sysconfig/apache2 and the apache2-<mpm> package.
 __httpd_mpm_modules: {}
 

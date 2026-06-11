@@ -1,0 +1,198 @@
+---
+# role: httpd
+# file: tasks/config.yml
+
+- name: Ensure httpd managed directories exist
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "{{ item.mode | default('0755') }}"
+  loop: "{{ __httpd_managed_directories }}"
+  loop_control:
+    label: "{{ item.path }}"
+  tags:
+    - httpd_config
+
+- name: Generate httpd default-deny private key
+  community.crypto.openssl_privatekey:
+    path: "{{ __httpd_default_vhost_certificate_key_file }}"
+    type: RSA
+    size: 4096
+    owner: root
+    group: root
+    mode: "0600"
+  when: __httpd_has_https_listener | bool
+  no_log: true
+  notify: httpd_reload
+  tags:
+    - httpd_config
+    - httpd_tls
+
+- name: Generate httpd default-deny certificate signing request
+  community.crypto.openssl_csr:
+    path: "{{ __httpd_default_vhost_certificate_csr_file }}"
+    privatekey_path: "{{ __httpd_default_vhost_certificate_key_file }}"
+    common_name: "{{ httpd_default_vhost_server_name }}"
+    subject_alt_name:
+      - "DNS:{{ httpd_default_vhost_server_name }}"
+    key_usage:
+      - digitalSignature
+      - keyEncipherment
+    key_usage_critical: true
+    extended_key_usage:
+      - serverAuth
+    extended_key_usage_critical: true
+    basic_constraints:
+      - "CA:FALSE"
+    basic_constraints_critical: true
+    owner: root
+    group: root
+    mode: "0644"
+  when: __httpd_has_https_listener | bool
+  notify: httpd_reload
+  tags:
+    - httpd_config
+    - httpd_tls
+
+- name: Generate httpd default-deny self-signed certificate
+  community.crypto.x509_certificate:
+    path: "{{ __httpd_default_vhost_certificate_file }}"
+    privatekey_path: "{{ __httpd_default_vhost_certificate_key_file }}"
+    csr_path: "{{ __httpd_default_vhost_certificate_csr_file }}"
+    provider: selfsigned
+    selfsigned_not_after: "+825d"
+    ignore_timestamps: true
+    owner: root
+    group: root
+    mode: "0644"
+  when: __httpd_has_https_listener | bool
+  notify: httpd_reload
+  tags:
+    - httpd_config
+    - httpd_tls
+
+- name: Manage SUSE httpd MPM selection
+  ansible.builtin.lineinfile:
+    path: "{{ __httpd_suse_sysconfig_path }}"
+    regexp: '^APACHE_MPM='
+    line: 'APACHE_MPM="{{ httpd_mpm }}"'
+    create: false
+    owner: root
+    group: root
+    mode: "0644"
+  when: __httpd_suse_sysconfig_path | length > 0
+  notify: httpd_reload
+  tags:
+    - httpd_config
+
+- name: Manage httpd explicit module configuration
+  ansible.builtin.template:
+    src: modules.conf.j2
+    dest: "{{ __httpd_modules_config_path }}"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: httpd_reload
+  tags:
+    - httpd_config
+
+- name: Manage httpd global listener configuration
+  ansible.builtin.template:
+    src: listen.conf.j2
+    dest: "{{ __httpd_listen_config_path }}"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: httpd_reload
+  tags:
+    - httpd_config
+
+- name: Manage httpd global TLS context
+  ansible.builtin.template:
+    src: tls.conf.j2
+    dest: "{{ __httpd_tls_config_path }}"
+    owner: root
+    group: root
+    mode: "0644"
+  when: __httpd_has_https_listener | bool
+  notify: httpd_reload
+  tags:
+    - httpd_config
+    - httpd_tls
+
+- name: Remove httpd global TLS context when no HTTPS listener exists
+  ansible.builtin.file:
+    path: "{{ __httpd_tls_config_path }}"
+    state: absent
+  when: not __httpd_has_https_listener | bool
+  notify: httpd_reload
+  tags:
+    - httpd_config
+    - httpd_tls
+
+- name: Manage httpd default-deny virtual host
+  ansible.builtin.template:
+    src: default-vhost.conf.j2
+    dest: "{{ __httpd_default_vhost_config_path }}"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: httpd_reload
+  tags:
+    - httpd_config
+
+- name: Remove absent httpd application virtual host files
+  ansible.builtin.file:
+    path: "{{ __httpd_vhost_dir }}/{{ item.name }}"
+    state: absent
+  loop: "{{ httpd_vhost_files }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: item.state | default('present') == 'absent'
+  notify: httpd_reload
+  tags:
+    - httpd_config
+
+- name: Manage httpd application virtual host files
+  ansible.builtin.copy:
+    dest: "{{ __httpd_vhost_dir }}/{{ item.name }}"
+    content: |
+      {{ ansible_managed | comment }}
+
+      {{ item.content | trim }}
+    owner: root
+    group: root
+    mode: "0644"
+  loop: "{{ httpd_vhost_files }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: item.state | default('present') == 'present'
+  notify: httpd_reload
+  tags:
+    - httpd_config
+
+- name: Manage httpd main configuration
+  ansible.builtin.template:
+    src: httpd.conf.j2
+    dest: "{{ __httpd_main_config_path }}"
+    owner: root
+    group: root
+    mode: "0644"
+    validate: "{{ __httpd_validate_main_config_command if not ansible_check_mode else omit }}"
+  notify: httpd_reload
+  tags:
+    - httpd_config
+
+- name: Validate effective httpd configuration
+  ansible.builtin.command:
+    argv:
+      - "{{ __httpd_binary }}"
+      - -t
+      - -f
+      - "{{ __httpd_main_config_path }}"
+  changed_when: false
+  when: not ansible_check_mode
+  tags:
+    - httpd_config

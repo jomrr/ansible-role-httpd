@@ -1,76 +1,56 @@
 ---
-# repo: jomrr/ansible-role-httpd
+# role: httpd
 # file: tasks/main.yml
 
-- name: "Include OS Specific Variables"
-  ansible.builtin.include_vars: "{{ lookup('ansible.builtin.first_found', params) }}"
-  vars:
-    params:
-      files:
-        - "{{ ansible_distribution | lower }}-{{ ansible_distribution_major_version }}.yml"
-        - "{{ ansible_os_family | lower }}-{{ ansible_distribution_major_version }}.yml"
-        - "{{ ansible_distribution | lower }}.yml"
-        - "{{ ansible_os_family | lower }}.yml"
-      paths:
-        - 'vars'
-      skip: true
+- name: Load httpd platform variables
+  ansible.builtin.include_vars: "{{ ansible_facts['os_family'] }}.yml"
+  tags:
+    - httpd_vars
 
-- name: "Install Packages"
-  become: true
+- name: Validate httpd role inputs
+  ansible.builtin.import_tasks: assert.yml
+  tags:
+    - httpd_assert
+
+- name: Derive httpd listener facts
+  ansible.builtin.set_fact:
+    __httpd_has_https_listener: >-
+      {{
+        httpd_listen
+        | selectattr('protocol', 'defined')
+        | selectattr('protocol', 'equalto', 'https')
+        | list
+        | length > 0
+      }}
+  changed_when: false
+  tags:
+    - always
+
+- name: Ensure httpd packages are installed
   ansible.builtin.package:
-    name: "{{ httpd_packages }}"
+    name: "{{ __httpd_packages + httpd_extra_packages }}"
     state: present
+  tags:
+    - httpd_install
 
-- name: "Fetch config files to controller tmp dir"
-  ansible.builtin.fetch:
-    src: "{{ httpd_config_file }}"
-    dest: "/tmp/{{ ansible_distribution }}.conf"
-    flat: true
+- name: Ensure httpd default-deny certificate packages are installed
+  ansible.builtin.package:
+    name: "{{ __httpd_default_vhost_certificate_packages }}"
+    state: present
+  when: __httpd_has_https_listener | bool
+  tags:
+    - httpd_install
+    - httpd_tls
 
-# - name: "Ensure config dirs in /etc are present"
-#   ansible.builtin.file:
-#     path: "{{ httpd_server_root }}/{{ item.dir }}"
-#     state: directory
-#     mode: "{{ item.mode }}"
-#     owner: "{{ item.owner }}"
-#     group: "{{ item.group }}"
-#   loop: "{{ httpd_etc_dirs }}"
+- name: Configure httpd
+  ansible.builtin.import_tasks: config.yml
+  tags:
+    - httpd_config
 
-# - name: Comment out all lines in each configuration file
-#   ansible.builtin.lineinfile:
-#     path: "{{ item.path }}"
-#     regex: '^(?!#)(.*)$'
-#     line: '# \1'
-#     backrefs: true
-#   loop: "{{ httpd_default_conf_files }}"
-#   notify: "Restart apache"
-
-- name: "Find files and directories in httpd_server_root"
-  ansible.builtin.find:
-    paths: "{{ httpd_server_root }}"
-    recurse: true
-  register: _etc_found
-
-- name: "Set permissions on directories"
-  ansible.builtin.file:
-    path: "{{ item.path }}"
-    owner: "root"
-    group: "{{ httpd_group }}"
-    mode: '0750'
-  loop: "{{ _etc_found.files + [{'path': httpd_server_root, 'isdir': true}] }}"
-  when: item.isdir and _etc_found.matched > 0
-
-- name: "Set permissions on files"
-  ansible.builtin.file:
-    path: "{{ item.path }}"
-    owner: "root"
-    group: "{{ httpd_group }}"
-    mode: '0640'
-  loop: "{{ _etc_found.files }}"
-  when: not item.isdir and _etc_found.matched > 0
-
-- name: "Configure httpd service enabled and state"
+- name: Ensure httpd service is enabled and started
   ansible.builtin.service:
-    name: "{{ httpd_service_name }}"
-    enabled: "{{ httpd_service_enabled }}"
-    state: "{{ httpd_service_state }}"
+    name: "{{ __httpd_service_name }}"
+    enabled: true
+    state: started
+  tags:
+    - httpd_service

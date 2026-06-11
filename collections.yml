@@ -1,0 +1,7 @@
+---
+# role: httpd
+# file: collections.yml
+
+collections:
+  - name: community.crypto
+    version: '>=2.0.0'

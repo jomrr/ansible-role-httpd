@@ -1,0 +1,110 @@
+---
+# role: httpd
+# file: vars/RedHat.yml
+
+__httpd_packages:
+  - httpd
+  - mod_ssl
+
+__httpd_default_vhost_certificate_packages:
+  - python3-cryptography
+
+__httpd_service_name: httpd
+
+__httpd_binary: /usr/sbin/httpd
+
+__httpd_managed_directories:
+  - path: /etc/httpd/managed/conf.d
+    mode: "0755"
+  - path: /etc/httpd/managed/modules.d
+    mode: "0755"
+  - path: /etc/httpd/managed/vhost.d
+    mode: "0755"
+  - path: /etc/httpd/managed/tls/certs
+    mode: "0755"
+  - path: /etc/httpd/managed/tls/csr
+    mode: "0755"
+  - path: /etc/httpd/managed/tls/private
+    mode: "0700"
+  - path: /var/cache/httpd
+    mode: "0755"
+  - path: /var/log/httpd
+    mode: "0755"
+  - path: /run/httpd
+    mode: "0755"
+
+__httpd_main_config_path: /etc/httpd/conf/httpd.conf
+__httpd_modules_config_path: /etc/httpd/managed/modules.d/00-modules.conf
+__httpd_listen_config_path: /etc/httpd/managed/conf.d/00-listen.conf
+__httpd_tls_config_path: /etc/httpd/managed/conf.d/00-tls.conf
+__httpd_default_vhost_config_path: /etc/httpd/managed/vhost.d/000-default-deny.conf
+__httpd_vhost_dir: /etc/httpd/managed/vhost.d
+
+__httpd_default_vhost_certificate_file: /etc/httpd/managed/tls/certs/httpd-default-deny.crt
+__httpd_default_vhost_certificate_key_file: /etc/httpd/managed/tls/private/httpd-default-deny.key
+__httpd_default_vhost_certificate_csr_file: /etc/httpd/managed/tls/csr/httpd-default-deny.csr
+
+__httpd_server_root: /etc/httpd
+__httpd_runtime_dir: /run/httpd
+__httpd_pid_file: /run/httpd/httpd.pid
+__httpd_user: apache
+__httpd_group: apache
+
+__httpd_error_log: /var/log/httpd/error.log
+__httpd_access_log: /var/log/httpd/access.log
+__httpd_types_config: /etc/mime.types
+
+__httpd_tls_session_cache: shmcb:/var/cache/httpd/sslcache(512000)
+__httpd_tls_stapling_cache: shmcb:/var/cache/httpd/ocspcache(128000)
+
+__httpd_modules_include_glob: /etc/httpd/managed/modules.d/*.conf
+__httpd_conf_include_glob: /etc/httpd/managed/conf.d/*.conf
+__httpd_vhost_include_glob: /etc/httpd/managed/vhost.d/*.conf
+
+__httpd_module_dir: modules
+
+__httpd_validate_main_config_command: >-
+  {{ __httpd_binary }} -t -f %s
+
+__httpd_mpm_modules:
+  event:
+    name: mpm_event_module
+    file: mod_mpm_event.so
+  worker:
+    name: mpm_worker_module
+    file: mod_mpm_worker.so
+  prefork:
+    name: mpm_prefork_module
+    file: mod_mpm_prefork.so
+
+__httpd_minimal_modules:
+  - name: unixd_module
+    file: mod_unixd.so
+  - name: systemd_module
+    file: mod_systemd.so
+  - name: authn_core_module
+    file: mod_authn_core.so
+  - name: authz_core_module
+    file: mod_authz_core.so
+  - name: alias_module
+    file: mod_alias.so
+  - name: dir_module
+    file: mod_dir.so
+  - name: mime_module
+    file: mod_mime.so
+  - name: env_module
+    file: mod_env.so
+  - name: setenvif_module
+    file: mod_setenvif.so
+  - name: log_config_module
+    file: mod_log_config.so
+  - name: reqtimeout_module
+    file: mod_reqtimeout.so
+
+__httpd_tls_modules:
+  - name: ssl_module
+    file: mod_ssl.so
+  - name: socache_shmcb_module
+    file: mod_socache_shmcb.so
+
+__httpd_suse_sysconfig_path: ""

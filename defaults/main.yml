@@ -1,90 +1,173 @@
-# repo: jomrr/ansible-role-httpd
+---
+# role: httpd
 # file: defaults/main.yml
-# desc: Default Apache server configuration
 
-# --- httpd role ---------------------------------------------------------------
-httpd_sebools:
-  httpd_anon_write: 1
-  httpd_builtin_scriping: 0
-  httpd_can_check_spam: 0
-  httpd_can_connect_ftp: 0
-  httpd_can_connect_ldap: 0
-  httpd_can_connect_mythtv: 0
-  httpd_can_connect_zabbix: 0
-  httpd_can_manage_courier_spool: 0
-  httpd_can_network_connect: 1
-  httpd_can_network_connect_cobbler: 0
-  httpd_can_network_connect_db: 1
-  httpd_can_network_memcache: 0
-  httpd_can_network_redis: 0
-  httpd_can_network_relay: 0
-  httpd_can_sendmail: 0
-  httpd_dbus_avahi: 0
-  httpd_dbus_sssd: 0
-  httpd_dontaudit_search_dirs: 0
-  httpd_enable_cgi: 0
-  httpd_enable_ftp_server: 0
-  httpd_enable_homedirs: 0
-  httpd_execmem: 0
-  httpd_graceful_shutdown: 0
-  httpd_manage_ipa: 0
-  httpd_mod_auth_ntlm_winbind: 0
-  httpd_mod_auth_pam: 0
-  httpd_read_user_content: 0
-  httpd_run_ipa: 0
-  httpd_run_preupgrade: 0
-  httpd_run_stickshift: 0
-  httpd_serve_cobbler_files: 0
-  httpd_setrlimit: 0
-  httpd_ssi_exec: 0
-  httpd_sys_script_anon_write: 0
-  httpd_tmp_exec: 0
-  httpd_tty_comm: 0
-  httpd_unified: 0
-  httpd_use_cifs: 0
-  httpd_use_fusefs: 0
-  httpd_use_gpg: 0
-  httpd_use_nfs: 0
-  httpd_use_opencryptoki: 0
-  httpd_use_openstack: 0
-  httpd_use_sasl: 0
-  httpd_verify_dns: 0
+# Installs additional platform-specific packages required by explicitly enabled extra modules or local policy.
+httpd_extra_packages: []
 
-httpd_service_enabled: true
-httpd_service_state: started
+# Sets the ServerName used by the security-only default-deny virtual host.
+httpd_default_vhost_server_name: default.invalid
 
-# --- httpd main configuration -------------------------------------------------
-httpd_directory_index: index.html
-httpd_document_root: /var/www/html
-httpd_keeopalive: "On"
-httpd_keepalive_timeout: 5
-httpd_limit_request_body: 512000
-httpd_listen: 80
-httpd_max_keepalive_requests: 100
-httpd_server_admin: "root@localhost"
-httpd_server_name: "{{ ansible_fqdn }}:80"
+# Enforces strict Host and SNI matching for virtual host selection.
+httpd_strict_host_check: true
+
+# Selects the Apache Multi-Processing Module policy.
+httpd_mpm: event
+
+# Sets the global Apache ServerAdmin directive.
+httpd_server_admin: root@localhost
+
+# Sets the global Apache ServerName directive.
+httpd_server_name: localhost
+
+# Controls the global ProxyRequests directive when proxy_module is explicitly enabled.
+httpd_proxy_requests: "Off"
+
+# Controls how much version information Apache exposes in server-generated responses.
+httpd_server_tokens: Prod
+
+# Controls whether Apache adds a server signature to generated pages.
 httpd_server_signature: "Off"
-httpd_server_tokens: "Prod"
-httpd_timeout: 60
+
+# Controls whether the HTTP TRACE method is enabled.
 httpd_trace_enable: "Off"
 
-# --- httpd modules ------------------------------------------------------------
-httpd_module_packages: []
-# Fedora
-# - python3-mod_wsgi
-# - mod_evasive
-# - mod_security
-# - mod_security_crs
-# Debian
-# - libapache2-mod-evasive
-# - libapache2-mod-security2
-# - libapache2-mod-wsgi-py3
-httpd_modules_enabled:
-  - authz_core
-  - dir
-  - log_config
-  - mime
-  - mpm_event
-  - rewrite
-  - ssl
-  - unixd
+# Controls the global FileETag directive.
+httpd_file_etag: "None"
+
+# Sets the global default charset for text responses where Apache applies AddDefaultCharset.
+httpd_add_default_charset: UTF-8
+
+# Sets the global Apache request timeout in seconds.
+httpd_timeout: 30
+
+# Controls whether HTTP keep-alive connections are enabled.
+httpd_keep_alive: "On"
+
+# Sets how long Apache waits for the next request on a keep-alive connection.
+httpd_keep_alive_timeout: 5
+
+# Sets the maximum number of requests allowed on a single keep-alive connection.
+httpd_max_keep_alive_requests: 100
+
+# Controls whether Apache uses sendfile for static file delivery.
+httpd_enable_sendfile: "Off"
+
+# Controls whether Apache uses memory mapping for static file delivery.
+httpd_enable_mmap: "Off"
+
+# Sets the global Apache LogLevel directive.
+httpd_log_level: warn
+
+# Defines global Apache LogFormat entries.
+httpd_log_formats:
+  # Identifies the common log format nickname used by CustomLog directives.
+  - name: common
+    # Defines the Apache common log format string.
+    format: '%h %l %u %t "%r" %>s %b'
+  # Identifies the combined log format nickname used by CustomLog directives.
+  - name: combined
+    # Defines the Apache combined log format string.
+    format: '%h %l %u %t "%r" %>s %b "%{Referer}i" "%{User-Agent}i"'
+
+# Adds additional global CustomLog entries; the platform access log is always rendered by the role.
+httpd_custom_logs: []
+# Example:
+# httpd_custom_logs:
+#   # Sets the log file path used by the CustomLog directive.
+#   - path: /var/log/httpd/example-access.log
+#     # Selects the log format nickname or inline format used by the CustomLog directive.
+#     format: combined
+
+# Defines global Directory blocks; defaults deny filesystem access until virtual hosts explicitly allow it.
+httpd_directory_blocks:
+  # Selects the filesystem path for the global Directory block.
+  - path: /
+    # Controls which .htaccess directives may override this Directory block.
+    allow_override: None
+    # Defines the Apache Options policy for this Directory block.
+    options: None
+    # Defines authorization rules for this Directory block.
+    require:
+      - all denied
+
+# Defines global Files blocks; defaults deny access to .ht* files.
+httpd_files_blocks:
+  # Selects the file pattern for the protected Files block.
+  - pattern: ".ht*"
+    # Defines authorization rules for this Files block.
+    require:
+      - all denied
+
+# Controls whether the role renders the global MIME basics block.
+httpd_mime_enabled: true
+
+# Defines additional global AddType MIME mappings.
+httpd_mime_types:
+  # Defines the MIME content type for the listed extensions.
+  - content_type: text/css
+    # Lists file extensions assigned to this MIME content type.
+    extensions:
+      - .css
+  # Defines the MIME content type for the listed extensions.
+  - content_type: application/javascript
+    # Lists file extensions assigned to this MIME content type.
+    extensions:
+      - .js
+
+# Defines global Apache Listen directives.
+httpd_listen:
+  # Defines the default HTTP listener port.
+  - port: 80
+  # Defines the default HTTPS listener port and enables the local default-deny certificate.
+  - port: 443
+    protocol: https
+
+# Sets the global TLS session cache timeout in seconds.
+httpd_tls_session_cache_timeout: 300
+
+# Controls the global SSLUseStapling directive.
+httpd_tls_use_stapling: "Off"
+
+# Defines global SSLRandomSeed directives.
+httpd_tls_random_seeds:
+  # Selects the startup random seed context.
+  - context: startup
+    # Defines the random seed source used during startup.
+    source: file:/dev/urandom
+    # Defines how many bytes are read from the startup seed source.
+    bytes: 512
+  # Selects the per-connection random seed context.
+  - context: connect
+    # Uses Apache built-in per-connection random seeding without a byte count.
+    source: builtin
+
+# Adds explicit Apache modules after the role-required module set.
+httpd_extra_modules: []
+# Example:
+# httpd_extra_modules:
+#   # Defines the Apache LoadModule identifier.
+#   - name: status_module
+#     # Defines the shared object file relative to the platform module directory.
+#     file: mod_status.so
+
+# Suppresses explicitly configured extra modules from the rendered LoadModule list.
+httpd_disabled_modules: []
+# Example:
+# httpd_disabled_modules:
+#   - status_module
+
+# Defines complete Apache-native virtual host files written into the managed vhost directory.
+httpd_vhost_files: []
+# Example:
+# httpd_vhost_files:
+#   # Sets the file name below the managed vhost directory; use names sorting after 000-default-deny.conf.
+#   - name: 100-example.conf
+#     # Controls the lifecycle of this managed vhost file.
+#     state: present
+#     # Provides complete Apache configuration for this vhost file.
+#     content: |-
+#       <VirtualHost *:80>
+#           ServerName example.invalid
+#           Redirect permanent / https://example.invalid/
+#       </VirtualHost>

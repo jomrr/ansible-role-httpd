@@ -1,7 +1,0 @@
----
-# role: jomrr.httpd
-# file: requirements.yml
-
-collections: []
-
-roles: []

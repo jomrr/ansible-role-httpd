@@ -1,7 +1,8 @@
-# role: jomrr.httpd
+---
+# role: httpd
 # file: molecule/resources/playbooks/converge.yml
 
-- name: "PLAYBOOK | Converge | httpd"
+- name: "Molecule | converge | httpd"
   hosts: all
   gather_facts: true
   roles:

@@ -1,11 +1,135 @@
-# role: jomrr.httpd
+---
+# role: httpd
 # file: molecule/resources/playbooks/verify.yml
 
-- name: "PLAYBOOK | Verify | httpd"
+- name: "Molecule | verify | httpd"
   hosts: all
-  gather_facts: false
+  gather_facts: true
+  vars:
+    __httpd_verify_role_path: "{{ lookup('ansible.builtin.env', 'MOLECULE_PROJECT_DIRECTORY') }}"
+
   tasks:
-    - name: "Assert true"
+    - name: Load httpd platform variables for verification
+      ansible.builtin.include_vars: "{{ __httpd_verify_role_path }}/vars/{{ ansible_facts['os_family'] }}.yml"
+
+    - name: Validate Apache effective configuration
+      ansible.builtin.command:
+        argv:
+          - "{{ __httpd_binary }}"
+          - -t
+          - -f
+          - "{{ __httpd_main_config_path }}"
+      changed_when: false
+
+    - name: Set httpd verification listener facts
+      ansible.builtin.set_fact:
+        __httpd_verify_has_https_listener: >-
+          {{
+            httpd_listen
+            | selectattr('protocol', 'defined')
+            | selectattr('protocol', 'equalto', 'https')
+            | list
+            | length > 0
+          }}
+
+    - name: Gather service facts
+      ansible.builtin.service_facts:
+
+    - name: Set httpd service fact
+      ansible.builtin.set_fact:
+        __httpd_verify_service_fact: >-
+          {{
+            ansible_facts['services'].get(
+              __httpd_service_name ~ '.service',
+              ansible_facts['services'].get(__httpd_service_name, {})
+            )
+          }}
+
+    - name: Assert Apache service is running
       ansible.builtin.assert:
-        that: "true"
-        fail_msg: "This should never fail"
+        that:
+          - __httpd_verify_service_fact | length > 0
+          - __httpd_verify_service_fact.state in ['running', 'started']
+
+    - name: Assert configured listener ports are reachable
+      ansible.builtin.wait_for:
+        host: "{{ item.address | default('127.0.0.1') }}"
+        port: "{{ item.port }}"
+        state: started
+        timeout: 5
+      loop: "{{ httpd_listen }}"
+      loop_control:
+        label: "{{ item.address | default('127.0.0.1') }}:{{ item.port }}"
+
+    - name: Assert default-deny certificate permissions
+      ansible.builtin.stat:
+        path: "{{ item.path }}"
+      loop:
+        - path: "{{ __httpd_default_vhost_certificate_file }}"
+          mode: "0644"
+        - path: "{{ __httpd_default_vhost_certificate_key_file }}"
+          mode: "0600"
+      loop_control:
+        label: "{{ item.path }}"
+      register: __httpd_verify_default_cert_files
+      when: __httpd_verify_has_https_listener | bool
+
+    - name: Assert default-deny certificate files are protected
+      ansible.builtin.assert:
+        that:
+          - item.stat.exists
+          - item.stat.isreg
+          - item.stat.pw_name == 'root'
+          - item.stat.gr_name == 'root'
+          - item.stat.mode == item.item.mode
+      loop: "{{ __httpd_verify_default_cert_files.results | default([]) }}"
+      loop_control:
+        label: "{{ item.item.path }}"
+      when: __httpd_verify_has_https_listener | bool
+
+    - name: Assert default-deny HTTP host is forbidden
+      ansible.builtin.uri:
+        url: "http://{{ item.address | default('127.0.0.1') }}:{{ item.port }}/"
+        headers:
+          Host: "{{ httpd_default_vhost_server_name }}"
+        status_code:
+          - 403
+      loop: "{{ httpd_listen }}"
+      loop_control:
+        label: "{{ item.port }}"
+      when:
+        - item.protocol is not defined or item.protocol == 'http'
+
+    - name: Assert managed application vhost redirects
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:8080/"
+        headers:
+          Host: molecule.example
+        follow_redirects: none
+        status_code:
+          - 301
+      register: __httpd_verify_redirect
+
+    - name: Assert managed application vhost redirect target
+      ansible.builtin.assert:
+        that:
+          - __httpd_verify_redirect.location == 'https://molecule.example/'
+
+    - name: Assert unknown HTTP host is rejected or denied
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:8080/"
+        headers:
+          Host: invalid.example
+        status_code:
+          - 400
+          - 403
+
+    - name: Assert default-deny HTTPS endpoint completes TLS and denies or rejects the request
+      ansible.builtin.uri:
+        url: "https://127.0.0.1:8443/"
+        validate_certs: false
+        status_code:
+          - 400
+          - 403
+          - 421
+      when: __httpd_verify_has_https_listener | bool

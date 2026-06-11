@@ -1,0 +1,31 @@
+{{ ansible_managed | comment }}
+
+# role: httpd
+# file: {{ __httpd_listen_config_path }}
+
+# ============================================================================
+# Apache HTTP Server global Listen configuration
+#
+# Purpose:
+#   Explicitly define which TCP ports Apache listens on.
+#   Nothing else belongs into this file.
+#
+# Notes:
+#   - A Listen directive does not define a virtual host.
+#   - The role may render a security-only default-deny virtual host separately.
+#   - Application VirtualHost definitions are managed separately.
+# ============================================================================
+
+{% for httpd_listener in httpd_listen %}
+{% set _httpd_listener_address = httpd_listener.address | default('') %}
+{% set _httpd_listener_protocol = (' ' ~ httpd_listener.protocol) if httpd_listener.protocol is defined and httpd_listener.protocol | length > 0 else '' %}
+{% if _httpd_listener_address | length > 0 %}
+{% if ':' in _httpd_listener_address and not _httpd_listener_address.startswith('[') %}
+Listen [{{ _httpd_listener_address }}]:{{ httpd_listener.port }}{{ _httpd_listener_protocol }}
+{% else %}
+Listen {{ _httpd_listener_address }}:{{ httpd_listener.port }}{{ _httpd_listener_protocol }}
+{% endif %}
+{% else %}
+Listen {{ httpd_listener.port }}{{ _httpd_listener_protocol }}
+{% endif %}
+{% endfor %}

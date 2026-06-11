@@ -1,0 +1,43 @@
+{{ ansible_managed | comment }}
+
+# role: httpd
+# file: {{ __httpd_modules_config_path }}
+
+# ============================================================================
+# Apache HTTP Server module configuration
+#
+# Purpose:
+#   Load the selected platform MPM module when required, the role-required
+#   minimal module set, the role-required TLS module set, and explicitly
+#   configured extra modules.
+# ============================================================================
+
+{% macro render_load_module(httpd_module) -%}
+{% set _httpd_module_path = httpd_module.path | default(__httpd_module_dir ~ '/' ~ httpd_module.file, true) %}
+LoadModule {{ httpd_module.name }} {{ _httpd_module_path }}
+{%- endmacro %}
+{% if httpd_mpm in __httpd_mpm_modules %}
+{% set _httpd_mpm_module = __httpd_mpm_modules[httpd_mpm] %}
+{{ render_load_module(_httpd_mpm_module) }}
+
+{% endif %}
+{% for httpd_module in __httpd_minimal_modules %}
+{{ render_load_module(httpd_module) }}
+{% endfor %}
+{% if __httpd_has_https_listener | bool %}
+{% for httpd_module in __httpd_tls_modules %}
+{{ render_load_module(httpd_module) }}
+{% endfor %}
+{% endif %}
+{% for httpd_module in httpd_extra_modules %}
+{% set _httpd_module_os_families = httpd_module.os_families | default([]) %}
+{% set _httpd_module_distributions = httpd_module.distributions | default([]) %}
+{% set _httpd_module_enabled = httpd_module.enabled | default(true) | bool %}
+{% set _httpd_module_os_ok = _httpd_module_os_families | length == 0 or ansible_facts['os_family'] in _httpd_module_os_families %}
+{% set _httpd_module_distribution_ok = _httpd_module_distributions | length == 0 or ansible_facts['distribution'] in _httpd_module_distributions %}
+{% set _httpd_module_mpm_ok = httpd_module.when_mpm is not defined or httpd_module.when_mpm == httpd_mpm %}
+{% set _httpd_module_not_disabled = httpd_module.name not in httpd_disabled_modules %}
+{% if _httpd_module_enabled and _httpd_module_os_ok and _httpd_module_distribution_ok and _httpd_module_mpm_ok and _httpd_module_not_disabled %}
+{{ render_load_module(httpd_module) }}
+{% endif %}
+{% endfor %}

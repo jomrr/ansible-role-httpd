@@ -1,9 +1,97 @@
-# {{ httpd_conf_file }}
-# Managed by ansible role jomrr.httpd
+{{ ansible_managed | comment }}
 
-# Never change this block
+# role: httpd
+# file: {{ __httpd_main_config_path }}
+
+# ============================================================================
+# Apache HTTP Server main configuration file
+# Hardened, minimal, deterministic.
+#
+# Layout:
+#   - {{ __httpd_modules_include_glob }} : explicitly loaded modules
+#   - {{ __httpd_conf_include_glob }}    : managed global configuration
+#   - {{ __httpd_vhost_include_glob }}   : managed default-deny and application vhosts
+# ============================================================================
+
+ServerRoot              "{{ __httpd_server_root }}"
+DefaultRuntimeDir       {{ __httpd_runtime_dir }}
+PidFile                 {{ __httpd_pid_file }}
+
+# Include modules explicitly before module-owned directives are used.
+IncludeOptional {{ __httpd_modules_include_glob }}
+
+ServerAdmin             {{ httpd_server_admin }}
+ServerName              {{ httpd_server_name }}
+
+ServerTokens            {{ httpd_server_tokens }}
+ServerSignature         {{ httpd_server_signature }}
+TraceEnable             {{ httpd_trace_enable }}
+FileETag                {{ httpd_file_etag }}
+StrictHostCheck         {{ 'On' if httpd_strict_host_check | bool else 'Off' }}
+
+User                    {{ __httpd_user }}
+Group                   {{ __httpd_group }}
+
+AddDefaultCharset       {{ httpd_add_default_charset }}
+
+<IfModule proxy_module>
+    ProxyRequests       {{ httpd_proxy_requests }}
+</IfModule>
+
+Timeout                 {{ httpd_timeout }}
+KeepAlive               {{ httpd_keep_alive }}
+KeepAliveTimeout        {{ httpd_keep_alive_timeout }}
+MaxKeepAliveRequests    {{ httpd_max_keep_alive_requests }}
+
+EnableSendfile          {{ httpd_enable_sendfile }}
+EnableMMAP              {{ httpd_enable_mmap }}
+
+ErrorLog                "{{ __httpd_error_log }}"
+LogLevel                {{ httpd_log_level }}
+
+<IfModule log_config_module>
+{% for httpd_log_format in httpd_log_formats %}
+    LogFormat "{{ httpd_log_format.format | replace('"', '\\"') }}" {{ httpd_log_format.name }}
+{% endfor %}
+    CustomLog "{{ __httpd_access_log }}" combined
+{% for httpd_custom_log in httpd_custom_logs %}
+    CustomLog "{{ httpd_custom_log.path }}" {{ httpd_custom_log.format }}
+{% endfor %}
+</IfModule>
+
+# Deny everything by default. Virtual hosts must explicitly allow what they need.
+{% for httpd_directory_block in httpd_directory_blocks %}
+{% if httpd_directory_block.path == '/' %}
 <Directory />
-  AllowOverride None
-  Require all denied
-  Options -Indexes -FollowSymLinks -SymLinksifOwnerMatch -ExecCGI -MultiViews
+{% else %}
+<Directory "{{ httpd_directory_block.path }}">
+{% endif %}
+    AllowOverride {{ httpd_directory_block.allow_override }}
+    Options {{ httpd_directory_block.options }}
+{% for httpd_require_rule in httpd_directory_block.require %}
+    Require {{ httpd_require_rule }}
+{% endfor %}
 </Directory>
+
+{% endfor %}
+{% for httpd_files_block in httpd_files_blocks %}
+<Files "{{ httpd_files_block.pattern }}">
+{% for httpd_require_rule in httpd_files_block.require %}
+    Require {{ httpd_require_rule }}
+{% endfor %}
+</Files>
+
+{% endfor %}
+{% if httpd_mime_enabled | bool %}
+<IfModule mime_module>
+    TypesConfig {{ __httpd_types_config }}
+{% for httpd_mime_type in httpd_mime_types %}
+    AddType {{ httpd_mime_type.content_type }} {{ httpd_mime_type.extensions | join(' ') }}
+{% endfor %}
+</IfModule>
+
+{% endif %}
+# Deterministic managed includes. Distribution package drop-in directories are
+# intentionally not included here.
+IncludeOptional {{ __httpd_conf_include_glob }}
+IncludeOptional {{ __httpd_vhost_include_glob }}

@@ -1,0 +1,38 @@
+{{ ansible_managed | comment }}
+
+# role: httpd
+# file: {{ __httpd_tls_config_path }}
+
+# ============================================================================
+# Apache HTTP Server global TLS context
+#
+# Purpose:
+#   Configure global TLS session cache, OCSP stapling cache, strict SNI host
+#   checks, and random seed settings shared by HTTPS virtual hosts.
+#
+# Not managed here:
+#   - Application VirtualHost definitions
+#   - TLS certificate issuance
+#   - TLS protocol or cipher policy
+# ============================================================================
+
+SSLSessionCache         {{ __httpd_tls_session_cache }}
+SSLSessionCacheTimeout  {{ httpd_tls_session_cache_timeout }}
+SSLStrictSNIVHostCheck  {{ 'On' if httpd_strict_host_check | bool else 'Off' }}
+
+SSLUseStapling          {{ httpd_tls_use_stapling }}
+SSLStaplingCache        {{ __httpd_tls_stapling_cache }}
+
+{% for httpd_tls_random_seed in httpd_tls_random_seeds %}
+{% set _httpd_tls_random_seed_parts = [
+    'SSLRandomSeed',
+    httpd_tls_random_seed.context,
+    httpd_tls_random_seed.source,
+] %}
+{% if httpd_tls_random_seed.bytes is defined %}
+{% set _httpd_tls_random_seed_parts = _httpd_tls_random_seed_parts + [
+    httpd_tls_random_seed.bytes | string,
+] %}
+{% endif %}
+{{ _httpd_tls_random_seed_parts | join(' ') }}
+{% endfor %}

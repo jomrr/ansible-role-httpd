@@ -1,0 +1,45 @@
+{{ ansible_managed | comment }}
+
+# role: httpd
+# file: {{ __httpd_default_vhost_config_path }}
+
+# ============================================================================
+# Apache HTTP Server default-deny virtual host
+#
+# Purpose:
+#   Provide a security-only first vhost for configured listeners. This is not an
+#   application virtual host and intentionally serves no content.
+# ============================================================================
+
+{% macro httpd_vhost_endpoint(httpd_listener) -%}
+{%- set _httpd_vhost_address = httpd_listener.address | default('*', true) -%}
+{%- if _httpd_vhost_address == '*' -%}
+*:{{ httpd_listener.port }}
+{%- elif ':' in _httpd_vhost_address and not _httpd_vhost_address.startswith('[') -%}
+[{{ _httpd_vhost_address }}]:{{ httpd_listener.port }}
+{%- else -%}
+{{ _httpd_vhost_address }}:{{ httpd_listener.port }}
+{%- endif -%}
+{%- endmacro %}
+{% for httpd_listener in httpd_listen %}
+{% set _httpd_vhost_protocol = httpd_listener.protocol | default('http', true) %}
+<VirtualHost {{ httpd_vhost_endpoint(httpd_listener) }}>
+    ServerName {{ httpd_default_vhost_server_name }}
+
+{% if _httpd_vhost_protocol == 'https' %}
+    SSLEngine on
+    SSLCertificateFile "{{ __httpd_default_vhost_certificate_file }}"
+    SSLCertificateKeyFile "{{ __httpd_default_vhost_certificate_key_file }}"
+
+{% endif %}
+    <Location />
+        Require all denied
+    </Location>
+
+    ErrorLog "{{ __httpd_error_log }}"
+    <IfModule log_config_module>
+        CustomLog "{{ __httpd_access_log }}" combined
+    </IfModule>
+</VirtualHost>
+
+{% endfor %}

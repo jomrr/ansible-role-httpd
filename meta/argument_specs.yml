@@ -1,0 +1,361 @@
+---
+# role: httpd
+# file: meta/argument_specs.yml
+
+argument_specs:
+  main:
+    short_description: Manage Apache HTTP Server baseline configuration
+    description:
+      - Installs Apache HTTP Server packages, manages global Apache configuration, renders
+        default-deny and Apache-native vhost files, validates the effective configuration,
+        and enables and starts the service.
+    options:
+      httpd_extra_packages:
+        type: list
+        elements: str
+        required: false
+        default: []
+        description: Additional platform packages required by explicitly enabled modules
+          or local policy.
+      httpd_default_vhost_server_name:
+        type: str
+        required: false
+        default: default.invalid
+        description: ServerName used by the default-deny virtual host and its invalid self-signed
+          certificate.
+      httpd_strict_host_check:
+        type: bool
+        required: false
+        default: true
+        description: Whether strict Host and SNI matching is enabled.
+      httpd_mpm:
+        type: str
+        required: false
+        default: event
+        choices:
+          - event
+          - worker
+          - prefork
+        description: Apache Multi-Processing Module policy.
+      httpd_server_admin:
+        type: str
+        required: false
+        default: root@localhost
+        description: Global Apache ServerAdmin directive.
+      httpd_server_name:
+        type: str
+        required: false
+        default: localhost
+        description: Global Apache ServerName directive.
+      httpd_proxy_requests:
+        type: str
+        required: false
+        default: 'Off'
+        choices:
+          - 'On'
+          - 'Off'
+        description: Global ProxyRequests directive when proxy_module is explicitly enabled.
+      httpd_server_tokens:
+        type: str
+        required: false
+        default: Prod
+        choices:
+          - Prod
+          - Major
+          - Minor
+          - Min
+          - OS
+          - Full
+        description: Controls how much version information Apache exposes.
+      httpd_server_signature:
+        type: str
+        required: false
+        default: 'Off'
+        choices:
+          - 'On'
+          - 'Off'
+          - EMail
+        description: Controls whether Apache adds a server signature to generated pages.
+      httpd_trace_enable:
+        type: str
+        required: false
+        default: 'Off'
+        choices:
+          - 'On'
+          - 'Off'
+          - extended
+        description: Controls whether the HTTP TRACE method is enabled.
+      httpd_file_etag:
+        type: str
+        required: false
+        default: None
+        description: Global FileETag directive.
+      httpd_add_default_charset:
+        type: str
+        required: false
+        default: UTF-8
+        description: Global AddDefaultCharset value.
+      httpd_timeout:
+        type: int
+        required: false
+        default: 30
+        description: Global request timeout in seconds.
+      httpd_keep_alive:
+        type: str
+        required: false
+        default: 'On'
+        choices:
+          - 'On'
+          - 'Off'
+        description: Controls HTTP keep-alive connections.
+      httpd_keep_alive_timeout:
+        type: int
+        required: false
+        default: 5
+        description: Keep-alive timeout in seconds.
+      httpd_max_keep_alive_requests:
+        type: int
+        required: false
+        default: 100
+        description: Maximum requests allowed on a single keep-alive connection.
+      httpd_enable_sendfile:
+        type: str
+        required: false
+        default: 'Off'
+        choices:
+          - 'On'
+          - 'Off'
+        description: Global EnableSendfile directive.
+      httpd_enable_mmap:
+        type: str
+        required: false
+        default: 'Off'
+        choices:
+          - 'On'
+          - 'Off'
+        description: Global EnableMMAP directive.
+      httpd_log_level:
+        type: str
+        required: false
+        default: warn
+        description: Global Apache LogLevel directive.
+      httpd_log_formats:
+        type: list
+        elements: dict
+        required: false
+        description: Global Apache LogFormat entries.
+        default:
+          - name: common
+            format: '%h %l %u %t "%r" %>s %b'
+          - name: combined
+            format: '%h %l %u %t "%r" %>s %b "%{Referer}i" "%{User-Agent}i"'
+        options:
+          name:
+            type: str
+            required: true
+          format:
+            type: str
+            required: true
+      httpd_custom_logs:
+        type: list
+        elements: dict
+        required: false
+        default: []
+        description: Additional global CustomLog entries.
+        options:
+          path:
+            type: path
+            required: true
+          format:
+            type: str
+            required: true
+      httpd_directory_blocks:
+        type: list
+        elements: dict
+        required: false
+        description: Global Apache Directory blocks.
+        default:
+          - path: /
+            allow_override: None
+            options: None
+            require:
+              - all denied
+        options:
+          path:
+            type: path
+            required: true
+          allow_override:
+            type: str
+            required: true
+          options:
+            type: str
+            required: true
+          require:
+            type: list
+            elements: str
+            required: true
+      httpd_files_blocks:
+        type: list
+        elements: dict
+        required: false
+        description: Global Apache Files blocks.
+        default:
+          - pattern: .ht*
+            require:
+              - all denied
+        options:
+          pattern:
+            type: str
+            required: true
+          require:
+            type: list
+            elements: str
+            required: true
+      httpd_mime_enabled:
+        type: bool
+        required: false
+        default: true
+        description: Whether to render the global MIME basics block.
+      httpd_mime_types:
+        type: list
+        elements: dict
+        required: false
+        description: Global Apache AddType definitions.
+        default:
+          - content_type: text/css
+            extensions:
+              - .css
+          - content_type: application/javascript
+            extensions:
+              - .js
+        options:
+          content_type:
+            type: str
+            required: true
+          extensions:
+            type: list
+            elements: str
+            required: true
+      httpd_listen:
+        type: list
+        elements: dict
+        required: false
+        description: Global Apache Listen directives.
+        default:
+          - port: 80
+          - port: 443
+            protocol: https
+        options:
+          port:
+            type: int
+            required: true
+          address:
+            type: str
+            required: false
+          protocol:
+            type: str
+            required: false
+            choices:
+              - http
+              - https
+      httpd_tls_session_cache_timeout:
+        type: int
+        required: false
+        default: 300
+        description: Global SSLSessionCacheTimeout in seconds.
+      httpd_tls_use_stapling:
+        type: str
+        required: false
+        default: 'Off'
+        choices:
+          - 'On'
+          - 'Off'
+        description: Global SSLUseStapling directive.
+      httpd_tls_random_seeds:
+        type: list
+        elements: dict
+        required: false
+        description: Global SSLRandomSeed directives. The bytes key is optional and must
+          be omitted for source=builtin.
+        default:
+          - context: startup
+            source: file:/dev/urandom
+            bytes: 512
+          - context: connect
+            source: builtin
+        options:
+          context:
+            type: str
+            required: true
+            choices:
+              - startup
+              - connect
+          source:
+            type: str
+            required: true
+          bytes:
+            type: int
+            required: false
+      httpd_extra_modules:
+        type: list
+        elements: dict
+        required: false
+        default: []
+        description: Additional Apache modules rendered after the role-required module set.
+        options:
+          name:
+            type: str
+            required: true
+          file:
+            type: str
+            required: false
+          path:
+            type: path
+            required: false
+          enabled:
+            type: bool
+            required: false
+            default: true
+          os_families:
+            type: list
+            elements: str
+            required: false
+          distributions:
+            type: list
+            elements: str
+            required: false
+          when_mpm:
+            type: str
+            required: false
+            choices:
+              - event
+              - worker
+              - prefork
+      httpd_disabled_modules:
+        type: list
+        elements: str
+        required: false
+        default: []
+        description: Explicit extra module names to suppress from the rendered LoadModule
+          list.
+      httpd_vhost_files:
+        type: list
+        elements: dict
+        required: false
+        default: []
+        description: Complete Apache-native virtual host files written into the managed
+          vhost directory.
+        options:
+          name:
+            type: str
+            required: true
+          state:
+            type: str
+            required: false
+            default: present
+            choices:
+              - present
+              - absent
+          content:
+            type: str
+            required: false

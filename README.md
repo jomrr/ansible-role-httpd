@@ -137,7 +137,7 @@ Managed configuration and default-deny certificate changes notify the `httpd_rel
 
 ## Operational Notes
 
-- Declare application vhost files in `httpd_vhost_files` with names sorting after `000-default-deny.conf`.
+- Present application vhost files in `httpd_vhost_files` must use names sorting after `000-default-deny.conf`.
 - `httpd_listen` defaults to HTTP and HTTPS; mark additional HTTPS listeners with `protocol: https`.
 - Add optional modules through `httpd_extra_modules`; required packages belong in `httpd_extra_packages`.
 - On SUSE-family systems, the MPM is selected through `/etc/sysconfig/apache2`.
@@ -218,4 +218,4 @@ Apache-native vhost file for HTTP-to-HTTPS redirect and reverse proxying.
 This project is licensed under the MIT License.
 See [LICENSE](LICENSE) for the full license text.
 
-Copyright (c) 2024 Jonas Mauer.
+Copyright (c) 2024-2026 Jonas Mauer.

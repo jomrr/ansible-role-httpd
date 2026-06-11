@@ -159,8 +159,6 @@
   ansible.builtin.copy:
     dest: "{{ __httpd_vhost_dir }}/{{ item.name }}"
     content: |
-      {{ ansible_managed | comment }}
-
       {{ item.content | trim }}
     owner: root
     group: root

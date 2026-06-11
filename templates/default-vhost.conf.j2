@@ -1,5 +1,3 @@
-{{ ansible_managed | comment }}
-
 # role: httpd
 # file: {{ __httpd_default_vhost_config_path }}
 
@@ -7,8 +5,8 @@
 # Apache HTTP Server default-deny virtual host
 #
 # Purpose:
-#   Provide a security-only first vhost for configured listeners. This is not an
-#   application virtual host and intentionally serves no content.
+#   Provide a security-only first vhost for configured listeners. This is not
+#   an application virtual host and intentionally serves no content.
 # ============================================================================
 
 {% macro httpd_vhost_endpoint(httpd_listener) -%}

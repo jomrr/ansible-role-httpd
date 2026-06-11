@@ -9,6 +9,11 @@
     __httpd_verify_role_path: "{{ lookup('ansible.builtin.env', 'MOLECULE_PROJECT_DIRECTORY') }}"
 
   tasks:
+    - name: Load httpd role defaults for verification
+      ansible.builtin.include_vars:
+        file: "{{ __httpd_verify_role_path }}/defaults/main.yml"
+        name: __httpd_verify_role_defaults
+
     - name: Load httpd platform variables for verification
       ansible.builtin.include_vars: "{{ __httpd_verify_role_path }}/vars/{{ ansible_facts['os_family'] }}.yml"
 
@@ -23,6 +28,11 @@
 
     - name: Set httpd verification listener facts
       ansible.builtin.set_fact:
+        __httpd_verify_default_vhost_server_name: >-
+          {{
+            httpd_default_vhost_server_name
+            | default(__httpd_verify_role_defaults.httpd_default_vhost_server_name)
+          }}
         __httpd_verify_has_https_listener: >-
           {{
             httpd_listen
@@ -91,7 +101,7 @@
       ansible.builtin.uri:
         url: "http://{{ item.address | default('127.0.0.1') }}:{{ item.port }}/"
         headers:
-          Host: "{{ httpd_default_vhost_server_name }}"
+          Host: "{{ __httpd_verify_default_vhost_server_name }}"
         status_code:
           - 403
       loop: "{{ httpd_listen }}"

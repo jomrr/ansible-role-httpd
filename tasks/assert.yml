@@ -146,11 +146,12 @@
       - item.name is match('^[A-Za-z0-9][A-Za-z0-9._-]*\\.conf$')
       - item.name != '000-default-deny.conf'
       - item.state | default('present') in ['present', 'absent']
+      - item.state | default('present') == 'absent' or item.name > '000-default-deny.conf'
       - item.state | default('present') == 'absent' or item.content is defined
       - item.state | default('present') == 'absent' or item.content | trim | length > 0
     fail_msg: >-
       Every httpd_vhost_files item requires a relative .conf name, must not replace 000-default-deny.conf,
-      and requires non-empty content unless state=absent.
+      must sort after 000-default-deny.conf unless state=absent, and requires non-empty content unless state=absent.
   loop: "{{ httpd_vhost_files }}"
   loop_control:
     label: "{{ item.name | default('undefined vhost file') }}"

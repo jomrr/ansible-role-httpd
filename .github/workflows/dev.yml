@@ -1,6 +1,6 @@
 ---
 # role: httpd
-# file: .github/workflows/dev-push-smoke.yml
+# file: .github/workflows/dev.yml
 
 name: dev push smoke
 

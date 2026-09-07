@@ -2,13 +2,30 @@
 # role: httpd
 # file: molecule/resources/playbooks/side_effect.yml
 
-- name: "HTTPD | Switch MPM on a running service"
+- name: "HTTPD | Switch MPM and remove proxy configuration"
   hosts: all
   gather_facts: true
   vars:
     __httpd_test_role_path: "{{ lookup('ansible.builtin.env', 'MOLECULE_PROJECT_DIRECTORY') }}"
     httpd_mpm: prefork
     httpd_timeout: 31
+    httpd_extra_modules:
+      - name: headers_module
+        path: "{{ __httpd_test_module_paths[ansible_facts.os_family] }}"
+    httpd_vhost_files:
+      - name: 100-molecule-redirect.conf
+        content: |-
+          <VirtualHost *:8080>
+              ServerName molecule.example
+              Header always set X-Molecule-Module "path-only"
+              Redirect permanent / https://molecule.example/
+          </VirtualHost>
+      - name: 200-molecule-proxy.conf
+        content: |-
+          <VirtualHost *:8080>
+              ServerName proxy.molecule.example
+              Redirect permanent / https://proxy.molecule.example/
+          </VirtualHost>
 
   pre_tasks:
     - name: "HTTPD | Load platform variables for service verification"
@@ -47,3 +64,12 @@
           - __httpd_test_pid_before.stdout | int > 0
           - __httpd_test_pid_after.stdout | int > 0
           - __httpd_test_pid_before.stdout != __httpd_test_pid_after.stdout
+
+    - name: "HTTPD | Assert updated vhost redirects after proxy removal"
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:8080/"
+        headers:
+          Host: proxy.molecule.example
+        follow_redirects: none
+        status_code:
+          - 301

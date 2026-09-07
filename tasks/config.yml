@@ -162,19 +162,6 @@
   tags:
     - httpd_config
 
-- name: "HTTPD | Manage main configuration"
-  ansible.builtin.template:
-    backup: true
-    src: httpd.conf.j2
-    dest: "{{ __httpd_main_config_path }}"
-    owner: root
-    group: root
-    mode: "0644"
-    validate: "{{ __httpd_validate_main_config_command if not ansible_check_mode else omit }}"
-  notify: reload
-  tags:
-    - httpd_config
-
 - name: "HTTPD | Manage application virtual host files"
   ansible.builtin.copy:
     backup: true
@@ -184,12 +171,24 @@
     owner: root
     group: root
     mode: "0644"
-    validate: "{{ __httpd_validate_vhost_config_command if not ansible_check_mode else omit }}"
   loop: "{{ httpd_vhost_files }}"
   loop_control:
     loop_var: __httpd_vhost_file
     label: "{{ __httpd_vhost_file.name }}"
   when: __httpd_vhost_file.state | default('present') == 'present'
+  notify: reload
+  tags:
+    - httpd_config
+
+- name: "HTTPD | Manage main configuration"
+  ansible.builtin.template:
+    backup: true
+    src: httpd.conf.j2
+    dest: "{{ __httpd_main_config_path }}"
+    owner: root
+    group: root
+    mode: "0644"
+    validate: "{{ __httpd_validate_main_config_command if not ansible_check_mode else omit }}"
   notify: reload
   tags:
     - httpd_config

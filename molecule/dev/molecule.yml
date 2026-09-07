@@ -33,6 +33,10 @@ provisioner:
         httpd_extra_modules:
           - name: "headers_module"
             path: "{{ __httpd_test_module_paths[ansible_facts.os_family] }}"
+          - name: "proxy_module"
+            file: "mod_proxy.so"
+          - name: "proxy_http_module"
+            file: "mod_proxy_http.so"
         httpd_listen:
           - port: 8080
           - port: 8443
@@ -44,6 +48,12 @@ provisioner:
                   ServerName molecule.example
                   Header always set X-Molecule-Module "path-only"
                   Redirect permanent / https://molecule.example/
+              </VirtualHost>
+          - name: "200-molecule-proxy.conf"
+            content: |-
+              <VirtualHost *:8080>
+                  ServerName proxy.molecule.example
+                  ProxyPass / http://127.0.0.1:8081/
               </VirtualHost>
 verifier:
   name: "ansible"

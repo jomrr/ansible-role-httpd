@@ -142,6 +142,7 @@ When both handlers are notified, the restart runs before the reload.
 ## Operational Notes
 
 - Idempotency: applying the same inputs to an already converged host makes no changes and does not restart or reload the service.
+- The role writes module, listener, TLS, and vhost changes before validating the main and complete configuration. A validation failure stops the role before service start or handler execution; files already written remain on disk, with module-provided backups for replacements.
 - Present application vhost files in `httpd_vhost_files` must use names sorting after `000-default-deny.conf`.
 - `httpd_listen` defaults to HTTP and HTTPS; mark additional HTTPS listeners with `protocol: https`.
 - Listener address and port endpoints in `httpd_listen` must be unique.

@@ -85,7 +85,7 @@
     group: root
     mode: "0644"
   when: __httpd_suse_sysconfig_path | length > 0
-  notify: reload
+  notify: restart
   tags:
     - httpd_config
 
@@ -97,7 +97,7 @@
     owner: root
     group: root
     mode: "0644"
-  notify: reload
+  notify: restart
   tags:
     - httpd_config
 

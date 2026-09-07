@@ -119,10 +119,13 @@ Effective `httpd -t -f` validation is skipped in check mode because first-run sy
 ## Service Behavior
 
 The role always ensures the Apache service is enabled and started.
-Managed configuration and default-deny certificate changes notify `reload`, handled by `HTTPD | Reload service`.
+Module configuration and SUSE MPM selection changes notify `restart`, handled by `HTTPD | Restart service`, so MPM changes replace the Apache parent process.
+Other managed configuration and default-deny certificate changes notify `reload`, handled by `HTTPD | Reload service`.
+When both handlers are notified, the restart runs before the reload.
 
 ### Handlers
 
+- HTTPD | Restart service
 - HTTPD | Reload service
 
 ## Security Notes
@@ -138,7 +141,7 @@ Managed configuration and default-deny certificate changes notify `reload`, hand
 
 ## Operational Notes
 
-- Idempotency: applying the same inputs to an already converged host makes no changes and does not reload the service.
+- Idempotency: applying the same inputs to an already converged host makes no changes and does not restart or reload the service.
 - Present application vhost files in `httpd_vhost_files` must use names sorting after `000-default-deny.conf`.
 - `httpd_listen` defaults to HTTP and HTTPS; mark additional HTTPS listeners with `protocol: https`.
 - Listener address and port endpoints in `httpd_listen` must be unique.

@@ -1,0 +1,49 @@
+---
+# role: httpd
+# file: molecule/resources/playbooks/side_effect.yml
+
+- name: "HTTPD | Switch MPM on a running service"
+  hosts: all
+  gather_facts: true
+  vars:
+    __httpd_test_role_path: "{{ lookup('ansible.builtin.env', 'MOLECULE_PROJECT_DIRECTORY') }}"
+    httpd_mpm: prefork
+    httpd_timeout: 31
+
+  pre_tasks:
+    - name: "HTTPD | Load platform variables for service verification"
+      ansible.builtin.include_vars: "{{ __httpd_test_role_path }}/vars/{{ ansible_facts.os_family }}.yml"
+
+    - name: "HTTPD | Read Apache parent PID before MPM switch"
+      ansible.builtin.command:
+        argv:
+          - systemctl
+          - show
+          - --property=MainPID
+          - --value
+          - "{{ __httpd_service_name }}"
+      changed_when: false
+      register: __httpd_test_pid_before
+
+  roles:
+    - role: "{{ __httpd_test_role_path }}"
+
+  post_tasks:
+    - name: "HTTPD | Read Apache parent PID after MPM switch"
+      ansible.builtin.command:
+        argv:
+          - systemctl
+          - show
+          - --property=MainPID
+          - --value
+          - "{{ __httpd_service_name }}"
+      changed_when: false
+      register: __httpd_test_pid_after
+
+    - name: "HTTPD | Assert MPM switch replaces the running Apache parent"
+      ansible.builtin.assert:
+        quiet: true
+        that:
+          - __httpd_test_pid_before.stdout | int > 0
+          - __httpd_test_pid_after.stdout | int > 0
+          - __httpd_test_pid_before.stdout != __httpd_test_pid_after.stdout

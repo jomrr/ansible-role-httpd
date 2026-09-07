@@ -77,7 +77,7 @@ The following variables are part of the public role interface.
 | `httpd_enable_sendfile` | `str` | `false` | `Off` | Global EnableSendfile directive. |
 | `httpd_enable_mmap` | `str` | `false` | `Off` | Global EnableMMAP directive. |
 | `httpd_log_level` | `str` | `false` | `warn` | Global Apache LogLevel directive. |
-| `httpd_log_formats` | `list` | `false` | - name: common<br />  format: '%h %l %u %t "%r" %&gt;s %b'<br />- name: combined<br />  format: '%h %l %u %t "%r" %&gt;s %b "%{Referer}i" "%{User-Agent}i"' | Global Apache LogFormat entries. |
+| `httpd_log_formats` | `list` | `false` | - name: common<br />  format: '%h %l %u %t "%r" %&gt;s %b'<br />- name: combined<br />  format: '%h %l %u %t "%r" %&gt;s %b "%{Referer}i" "%{User-Agent}i"' | Global Apache LogFormat entries; combined is always provided and can be redefined here. |
 | `httpd_custom_logs` | `list` | `false` | [] | Additional global CustomLog entries. |
 | `httpd_directory_blocks` | `list` | `false` | - path: /<br />  allow_override: None<br />  options: None<br />  require:<br />    - all denied | Global Apache Directory blocks. |
 | `httpd_files_blocks` | `list` | `false` | - pattern: .ht*<br />  require:<br />    - all denied | Global Apache Files blocks. |
@@ -146,6 +146,7 @@ When both handlers are notified, the restart runs before the reload.
 - Present application vhost files in `httpd_vhost_files` must use names sorting after `000-default-deny.conf`.
 - `httpd_listen` defaults to HTTP and HTTPS; mark additional HTTPS listeners with `protocol: https`.
 - Listener address and port endpoints in `httpd_listen` must be unique.
+- The main and default-deny access logs use `combined`. The role always defines this format before `httpd_log_formats`, so an empty list or a list without `combined` retains standard combined logging. An explicit `combined` entry overrides the built-in format.
 - `httpd_custom_logs` entries require exactly one target (`file` or `pipe`), exactly one format (`format_name` or `format_string`), and optionally one condition (`env` or `expr`).
 - Add optional modules through `httpd_extra_modules`; required packages belong in `httpd_extra_packages`.
 - Module entries are deduplicated by name. The first entry wins; role-required modules take precedence over `httpd_extra_modules`.

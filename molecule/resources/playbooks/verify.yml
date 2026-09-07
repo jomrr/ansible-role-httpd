@@ -14,9 +14,13 @@
         file: "{{ __httpd_verify_role_path }}/defaults/main.yml"
         name: __httpd_verify_role_defaults
 
+    - name: "HTTPD | Load platform variables for log verification"
+      ansible.builtin.include_vars: "{{ __httpd_verify_role_path }}/vars/{{ ansible_facts.os_family }}.yml"
+
     - name: "HTTPD | Assert default-deny HTTP host is forbidden"
       ansible.builtin.uri:
         url: "http://{{ __httpd_verify_listener.address | default('127.0.0.1') }}:{{ __httpd_verify_listener.port }}/"
+        http_agent: molecule-default-log
         headers:
           Host: "{{ httpd_default_vhost_server_name | default(__httpd_verify_role_defaults.httpd_default_vhost_server_name) }}"
         status_code:
@@ -31,6 +35,7 @@
     - name: "HTTPD | Assert managed application vhost redirects"
       ansible.builtin.uri:
         url: "http://127.0.0.1:8080/"
+        http_agent: molecule-application-log
         headers:
           Host: molecule.example
         follow_redirects: none
@@ -44,6 +49,20 @@
         that:
           - __httpd_verify_redirect.location == 'https://molecule.example/'
           - __httpd_verify_redirect.x_molecule_module == 'path-only'
+
+    - name: "HTTPD | Verify access log request details without a configured combined format"
+      ansible.builtin.wait_for:
+        path: "{{ __httpd_access_log }}"
+        search_regex: '"GET / HTTP/1[.]1" {{ __httpd_verify_log.status }} [0-9]+ "-" "{{ __httpd_verify_log.agent }}"$'
+        timeout: 10
+      loop:
+        - agent: molecule-default-log
+          status: 403
+        - agent: molecule-application-log
+          status: 301
+      loop_control:
+        loop_var: __httpd_verify_log
+        label: "{{ __httpd_verify_log.agent }}"
 
     - name: "HTTPD | Assert unknown HTTP host is rejected or denied"
       ansible.builtin.uri:

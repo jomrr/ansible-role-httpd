@@ -41,6 +41,9 @@ provisioner:
           - port: 8080
           - port: 8443
             protocol: "https"
+        httpd_log_formats:
+          - name: "molecule"
+            format: "%v %r %>s"
         httpd_vhost_files:
           - name: "100-molecule-redirect.conf"
             content: |-

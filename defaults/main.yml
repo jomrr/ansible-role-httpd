@@ -59,7 +59,7 @@ httpd_enable_mmap: "Off"
 # Sets the global Apache LogLevel directive.
 httpd_log_level: warn
 
-# Defines global Apache LogFormat entries.
+# Defines global Apache LogFormat entries; combined is always provided and can be redefined here.
 httpd_log_formats:
   # Identifies the common log format nickname used by CustomLog directives.
   - name: common

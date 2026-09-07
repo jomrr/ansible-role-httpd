@@ -16,7 +16,7 @@ DefaultRuntimeDir       {{ __httpd_runtime_dir }}
 PidFile                 {{ __httpd_pid_file }}
 
 # Include modules explicitly before module-owned directives are used.
-IncludeOptional {{ __httpd_modules_include_glob }}
+IncludeOptional         {{ __httpd_modules_include_glob }}
 
 ServerAdmin             {{ httpd_server_admin }}
 ServerName              {{ httpd_server_name }}
@@ -48,6 +48,7 @@ ErrorLog                "{{ __httpd_error_log }}"
 LogLevel                {{ httpd_log_level }}
 
 <IfModule log_config_module>
+    LogFormat "%h %l %u %t \"%r\" %>s %b \"%{Referer}i\" \"%{User-Agent}i\"" combined
 {% for __httpd_log_format in httpd_log_formats %}
     LogFormat "{{ __httpd_log_format.format | replace('"', '\\"') }}" {{ __httpd_log_format.name }}
 {% endfor %}

@@ -38,11 +38,12 @@
           - 301
       register: __httpd_verify_redirect
 
-    - name: "HTTPD | Assert managed application vhost redirect target"
+    - name: "HTTPD | Assert managed application vhost redirect target and module header"
       ansible.builtin.assert:
         quiet: true
         that:
           - __httpd_verify_redirect.location == 'https://molecule.example/'
+          - __httpd_verify_redirect.x_molecule_module == 'path-only'
 
     - name: "HTTPD | Assert unknown HTTP host is rejected or denied"
       ansible.builtin.uri:

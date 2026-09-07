@@ -16,5 +16,5 @@
     + (__httpd_tls_modules if 'https' in httpd_listen | map(attribute='protocol', default='http') else [])
     + httpd_extra_modules
 ) | unique(attribute='name', case_sensitive=true) %}
-LoadModule {{ __httpd_module.name }} {{ __httpd_module.path | default(__httpd_module_dir ~ '/' ~ __httpd_module.file, true) }}
+LoadModule {{ __httpd_module.name }} {{ __httpd_module.path if __httpd_module.path | default('') else __httpd_module_dir ~ '/' ~ __httpd_module.file }}
 {% endfor %}

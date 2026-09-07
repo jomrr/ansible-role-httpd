@@ -26,6 +26,13 @@ provisioner:
   inventory:
     group_vars:
       all:
+        __httpd_test_module_paths:
+          Debian: "/usr/lib/apache2/modules/mod_headers.so"
+          RedHat: "/etc/httpd/modules/mod_headers.so"
+          Suse: "/usr/lib64/apache2-{{ httpd_mpm }}/mod_headers.so"
+        httpd_extra_modules:
+          - name: "headers_module"
+            path: "{{ __httpd_test_module_paths[ansible_facts.os_family] }}"
         httpd_listen:
           - port: 8080
           - port: 8443
@@ -35,6 +42,7 @@ provisioner:
             content: |-
               <VirtualHost *:8080>
                   ServerName molecule.example
+                  Header always set X-Molecule-Module "path-only"
                   Redirect permanent / https://molecule.example/
               </VirtualHost>
 verifier:

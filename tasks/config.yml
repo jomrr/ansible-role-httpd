@@ -24,7 +24,9 @@
     owner: root
     group: root
     mode: "0600"
-  when: "'https' in httpd_listen | map(attribute='protocol', default='http')"
+  when:
+    - not ansible_check_mode
+    - "'https' in httpd_listen | map(attribute='protocol', default='http')"
   no_log: true
   notify: reload
   tags:
@@ -51,7 +53,9 @@
     owner: root
     group: root
     mode: "0644"
-  when: "'https' in httpd_listen | map(attribute='protocol', default='http')"
+  when:
+    - not ansible_check_mode
+    - "'https' in httpd_listen | map(attribute='protocol', default='http')"
   notify: reload
   tags:
     - httpd_config
@@ -68,7 +72,9 @@
     owner: root
     group: root
     mode: "0644"
-  when: "'https' in httpd_listen | map(attribute='protocol', default='http')"
+  when:
+    - not ansible_check_mode
+    - "'https' in httpd_listen | map(attribute='protocol', default='http')"
   notify: reload
   tags:
     - httpd_config
@@ -84,7 +90,9 @@
     owner: root
     group: root
     mode: "0644"
-  when: __httpd_suse_sysconfig_path | length > 0
+  when:
+    - not ansible_check_mode
+    - __httpd_suse_sysconfig_path | length > 0
   notify: restart
   tags:
     - httpd_config

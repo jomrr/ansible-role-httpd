@@ -61,6 +61,21 @@ provisioner:
 verifier:
   name: "ansible"
 scenario:
+  test_sequence:
+    - "dependency"
+    - "cleanup"
+    - "destroy"
+    - "syntax"
+    - "create"
+    - "prepare"
+    - "check"
+    - "converge"
+    - "idempotence"
+    - "check"
+    - "side_effect"
+    - "verify"
+    - "cleanup"
+    - "destroy"
   name: "default"
 platforms:
   - name: "httpd"

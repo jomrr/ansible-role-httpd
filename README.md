@@ -113,8 +113,10 @@ The following variables are part of the public role interface.
 
 ## Check Mode
 
-Package, directory, template, line, copy, file, certificate, and service tasks support check mode where the underlying module supports it.
-Effective `httpd -t -f` validation is skipped in check mode because first-run systems may not have the Apache binary or include files yet.
+Check mode predicts package, directory, template, copy, and file changes, including before the first installation.
+Private key, CSR, and certificate generation, SUSE MPM selection, service tasks, and handlers are skipped in check mode because their prerequisites may not exist until an actual run.
+These skipped steps do not report predicted changes, including on already configured hosts.
+Effective `httpd -t -f` validation is also skipped because first-run systems may not have the Apache binary or include files yet.
 
 ## Service Behavior
 

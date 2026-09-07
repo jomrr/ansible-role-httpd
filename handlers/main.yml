@@ -6,10 +6,12 @@
   ansible.builtin.service:
     name: "{{ __httpd_service_name }}"
     state: restarted
+  when: not ansible_check_mode
   listen: restart
 
 - name: "HTTPD | Reload service"
   ansible.builtin.service:
     name: "{{ __httpd_service_name }}"
     state: reloaded
+  when: not ansible_check_mode
   listen: reload

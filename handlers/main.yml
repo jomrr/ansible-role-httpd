@@ -2,9 +2,8 @@
 # role: httpd
 # file: handlers/main.yml
 
-- name: Reload httpd service
+- name: "HTTPD | Reload service"
   ansible.builtin.service:
     name: "{{ __httpd_service_name }}"
     state: reloaded
-  when: not ansible_check_mode
-  listen: httpd_reload
+  listen: reload

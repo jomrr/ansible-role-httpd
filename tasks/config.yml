@@ -4,14 +4,15 @@
 
 - name: "HTTPD | Ensure managed directories exist"
   ansible.builtin.file:
-    path: "{{ item.path }}"
+    path: "{{ __httpd_directory.path }}"
     state: directory
     owner: root
     group: root
-    mode: "{{ item.mode | default('0755') }}"
+    mode: "{{ __httpd_directory.mode }}"
   loop: "{{ __httpd_managed_directories }}"
   loop_control:
-    label: "{{ item.path }}"
+    loop_var: __httpd_directory
+    label: "{{ __httpd_directory.path }}"
   tags:
     - httpd_config
 
@@ -23,9 +24,9 @@
     owner: root
     group: root
     mode: "0600"
-  when: __httpd_has_https_listener | bool
+  when: "'https' in httpd_listen | map(attribute='protocol', default='http')"
   no_log: true
-  notify: httpd_reload
+  notify: reload
   tags:
     - httpd_config
     - httpd_tls
@@ -50,8 +51,8 @@
     owner: root
     group: root
     mode: "0644"
-  when: __httpd_has_https_listener | bool
-  notify: httpd_reload
+  when: "'https' in httpd_listen | map(attribute='protocol', default='http')"
+  notify: reload
   tags:
     - httpd_config
     - httpd_tls
@@ -67,14 +68,15 @@
     owner: root
     group: root
     mode: "0644"
-  when: __httpd_has_https_listener | bool
-  notify: httpd_reload
+  when: "'https' in httpd_listen | map(attribute='protocol', default='http')"
+  notify: reload
   tags:
     - httpd_config
     - httpd_tls
 
 - name: "HTTPD | Manage SUSE MPM selection"
   ansible.builtin.lineinfile:
+    backup: true
     path: "{{ __httpd_suse_sysconfig_path }}"
     regexp: '^APACHE_MPM='
     line: 'APACHE_MPM="{{ httpd_mpm }}"'
@@ -83,41 +85,44 @@
     group: root
     mode: "0644"
   when: __httpd_suse_sysconfig_path | length > 0
-  notify: httpd_reload
+  notify: reload
   tags:
     - httpd_config
 
 - name: "HTTPD | Manage explicit module configuration"
   ansible.builtin.template:
+    backup: true
     src: modules.conf.j2
     dest: "{{ __httpd_modules_config_path }}"
     owner: root
     group: root
     mode: "0644"
-  notify: httpd_reload
+  notify: reload
   tags:
     - httpd_config
 
 - name: "HTTPD | Manage global listener configuration"
   ansible.builtin.template:
+    backup: true
     src: listen.conf.j2
     dest: "{{ __httpd_listen_config_path }}"
     owner: root
     group: root
     mode: "0644"
-  notify: httpd_reload
+  notify: reload
   tags:
     - httpd_config
 
 - name: "HTTPD | Manage global TLS context"
   ansible.builtin.template:
+    backup: true
     src: tls.conf.j2
     dest: "{{ __httpd_tls_config_path }}"
     owner: root
     group: root
     mode: "0644"
-  when: __httpd_has_https_listener | bool
-  notify: httpd_reload
+  when: "'https' in httpd_listen | map(attribute='protocol', default='http')"
+  notify: reload
   tags:
     - httpd_config
     - httpd_tls
@@ -126,61 +131,66 @@
   ansible.builtin.file:
     path: "{{ __httpd_tls_config_path }}"
     state: absent
-  when: not __httpd_has_https_listener | bool
-  notify: httpd_reload
+  when: "'https' not in httpd_listen | map(attribute='protocol', default='http')"
+  notify: reload
   tags:
     - httpd_config
     - httpd_tls
 
 - name: "HTTPD | Manage default-deny virtual host"
   ansible.builtin.template:
+    backup: true
     src: default-vhost.conf.j2
     dest: "{{ __httpd_default_vhost_config_path }}"
     owner: root
     group: root
     mode: "0644"
-  notify: httpd_reload
+  notify: reload
   tags:
     - httpd_config
 
 - name: "HTTPD | Remove absent application virtual host files"
   ansible.builtin.file:
-    path: "{{ __httpd_vhost_dir }}/{{ item.name }}"
+    path: "{{ __httpd_vhost_dir }}/{{ __httpd_vhost_file.name }}"
     state: absent
   loop: "{{ httpd_vhost_files }}"
   loop_control:
-    label: "{{ item.name }}"
-  when: item.state | default('present') == 'absent'
-  notify: httpd_reload
+    loop_var: __httpd_vhost_file
+    label: "{{ __httpd_vhost_file.name }}"
+  when: __httpd_vhost_file.state | default('present') == 'absent'
+  notify: reload
   tags:
     - httpd_config
 
 - name: "HTTPD | Manage main configuration"
   ansible.builtin.template:
+    backup: true
     src: httpd.conf.j2
     dest: "{{ __httpd_main_config_path }}"
     owner: root
     group: root
     mode: "0644"
     validate: "{{ __httpd_validate_main_config_command if not ansible_check_mode else omit }}"
-  notify: httpd_reload
+  notify: reload
   tags:
     - httpd_config
 
 - name: "HTTPD | Manage application virtual host files"
   ansible.builtin.copy:
-    dest: "{{ __httpd_vhost_dir }}/{{ item.name }}"
+    backup: true
+    dest: "{{ __httpd_vhost_dir }}/{{ __httpd_vhost_file.name }}"
     content: |
-      {{ item.content | trim }}
+      {{ __httpd_vhost_file.content | trim }}
     owner: root
     group: root
     mode: "0644"
     validate: "{{ __httpd_validate_vhost_config_command if not ansible_check_mode else omit }}"
   loop: "{{ httpd_vhost_files }}"
   loop_control:
-    label: "{{ item.name }}"
-  when: item.state | default('present') == 'present'
-  notify: httpd_reload
+    loop_var: __httpd_vhost_file
+    label: "{{ __httpd_vhost_file.name }}"
+  when: __httpd_vhost_file.state | default('present') == 'present'
+  notify: reload
   tags:
     - httpd_config
 

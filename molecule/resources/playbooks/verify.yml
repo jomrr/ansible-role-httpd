@@ -2,7 +2,7 @@
 # role: httpd
 # file: molecule/resources/playbooks/verify.yml
 
-- name: "Molecule | verify | httpd"
+- name: "HTTPD | Verify"
   hosts: all
   gather_facts: true
   vars:
@@ -14,34 +14,19 @@
         file: "{{ __httpd_verify_role_path }}/defaults/main.yml"
         name: __httpd_verify_role_defaults
 
-    - name: "HTTPD | Set verification listener facts"
-      ansible.builtin.set_fact:
-        __httpd_verify_default_vhost_server_name: >-
-          {{
-            httpd_default_vhost_server_name
-            | default(__httpd_verify_role_defaults.httpd_default_vhost_server_name)
-          }}
-        __httpd_verify_has_https_listener: >-
-          {{
-            httpd_listen
-            | selectattr('protocol', 'defined')
-            | selectattr('protocol', 'equalto', 'https')
-            | list
-            | length > 0
-          }}
-
     - name: "HTTPD | Assert default-deny HTTP host is forbidden"
       ansible.builtin.uri:
-        url: "http://{{ item.address | default('127.0.0.1') }}:{{ item.port }}/"
+        url: "http://{{ __httpd_verify_listener.address | default('127.0.0.1') }}:{{ __httpd_verify_listener.port }}/"
         headers:
-          Host: "{{ __httpd_verify_default_vhost_server_name }}"
+          Host: "{{ httpd_default_vhost_server_name | default(__httpd_verify_role_defaults.httpd_default_vhost_server_name) }}"
         status_code:
           - 403
       loop: "{{ httpd_listen }}"
       loop_control:
-        label: "{{ item.port }}"
+        loop_var: __httpd_verify_listener
+        label: "{{ __httpd_verify_listener.port }}"
       when:
-        - item.protocol is not defined or item.protocol == 'http'
+        - __httpd_verify_listener.protocol is not defined or __httpd_verify_listener.protocol == 'http'
 
     - name: "HTTPD | Assert managed application vhost redirects"
       ansible.builtin.uri:
@@ -55,6 +40,7 @@
 
     - name: "HTTPD | Assert managed application vhost redirect target"
       ansible.builtin.assert:
+        quiet: true
         that:
           - __httpd_verify_redirect.location == 'https://molecule.example/'
 
@@ -75,4 +61,4 @@
           - 400
           - 403
           - 421
-      when: __httpd_verify_has_https_listener | bool
+      when: "'https' in httpd_listen | map(attribute='protocol', default='http')"

@@ -3,23 +3,9 @@
 # file: tasks/main.yml
 
 - name: "HTTPD | Load platform variables"
-  ansible.builtin.include_vars: "{{ ansible_facts['os_family'] }}.yml"
+  ansible.builtin.include_vars: "{{ ansible_facts.os_family }}.yml"
   tags:
     - httpd_vars
-
-- name: "HTTPD | Derive listener facts"
-  ansible.builtin.set_fact:
-    __httpd_has_https_listener: >-
-      {{
-        httpd_listen
-        | selectattr('protocol', 'defined')
-        | selectattr('protocol', 'equalto', 'https')
-        | list
-        | length > 0
-      }}
-  changed_when: false
-  tags:
-    - always
 
 - name: "HTTPD | Validate role inputs"
   ansible.builtin.import_tasks: assert.yml
@@ -37,7 +23,7 @@
   ansible.builtin.package:
     name: "{{ __httpd_default_vhost_certificate_packages }}"
     state: present
-  when: __httpd_has_https_listener | bool
+  when: "'https' in httpd_listen | map(attribute='protocol', default='http')"
   tags:
     - httpd_install
     - httpd_tls

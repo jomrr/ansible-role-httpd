@@ -1,5 +1,5 @@
-# role: httpd
-# file: {{ __httpd_default_vhost_config_path }}
+# Managed by ansible.
+# file: {{ template_destpath }}
 
 # ============================================================================
 # Apache HTTP Server default-deny virtual host
@@ -9,22 +9,16 @@
 #   an application virtual host and intentionally serves no content.
 # ============================================================================
 
-{% macro httpd_vhost_endpoint(httpd_listener) -%}
-{%- set _httpd_vhost_address = httpd_listener.address | default('*', true) -%}
-{%- if _httpd_vhost_address == '*' -%}
-*:{{ httpd_listener.port }}
-{%- elif ':' in _httpd_vhost_address and not _httpd_vhost_address.startswith('[') -%}
-[{{ _httpd_vhost_address }}]:{{ httpd_listener.port }}
-{%- else -%}
-{{ _httpd_vhost_address }}:{{ httpd_listener.port }}
-{%- endif -%}
-{%- endmacro %}
-{% for httpd_listener in httpd_listen %}
-{% set _httpd_vhost_protocol = httpd_listener.protocol | default('http', true) %}
-<VirtualHost {{ httpd_vhost_endpoint(httpd_listener) }}>
+{% for __httpd_listener in httpd_listen %}
+{% set __httpd_vhost_address = __httpd_listener.address | default('*', true) %}
+{% if ':' in __httpd_vhost_address and not __httpd_vhost_address.startswith('[') %}
+<VirtualHost [{{ __httpd_vhost_address }}]:{{ __httpd_listener.port }}>
+{% else %}
+<VirtualHost {{ __httpd_vhost_address }}:{{ __httpd_listener.port }}>
+{% endif %}
     ServerName {{ httpd_default_vhost_server_name }}
 
-{% if _httpd_vhost_protocol == 'https' %}
+{% if __httpd_listener.protocol | default('http') == 'https' %}
     SSLEngine on
     SSLCertificateFile "{{ __httpd_default_vhost_certificate_file }}"
     SSLCertificateKeyFile "{{ __httpd_default_vhost_certificate_key_file }}"

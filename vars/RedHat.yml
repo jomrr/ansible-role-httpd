@@ -18,7 +18,7 @@ __httpd_managed_directories:
     mode: "0755"
   - path: /etc/httpd/managed/modules.d
     mode: "0755"
-  - path: /etc/httpd/managed/vhost.d
+  - path: /etc/httpd/managed/vhosts.d
     mode: "0755"
   - path: /etc/httpd/managed/tls/certs
     mode: "0755"
@@ -37,8 +37,8 @@ __httpd_main_config_path: /etc/httpd/conf/httpd.conf
 __httpd_modules_config_path: /etc/httpd/managed/modules.d/00-modules.conf
 __httpd_listen_config_path: /etc/httpd/managed/conf.d/00-listen.conf
 __httpd_tls_config_path: /etc/httpd/managed/conf.d/00-tls.conf
-__httpd_default_vhost_config_path: /etc/httpd/managed/vhost.d/000-default-deny.conf
-__httpd_vhost_dir: /etc/httpd/managed/vhost.d
+__httpd_default_vhost_config_path: /etc/httpd/managed/vhosts.d/000-default-deny.conf
+__httpd_vhost_dir: /etc/httpd/managed/vhosts.d
 
 __httpd_default_vhost_certificate_file: /etc/httpd/managed/tls/certs/httpd-default-deny.crt
 __httpd_default_vhost_certificate_key_file: /etc/httpd/managed/tls/private/httpd-default-deny.key
@@ -59,7 +59,7 @@ __httpd_tls_stapling_cache: shmcb:/var/cache/httpd/ocspcache(128000)
 
 __httpd_modules_include_glob: /etc/httpd/managed/modules.d/*.conf
 __httpd_conf_include_glob: /etc/httpd/managed/conf.d/*.conf
-__httpd_vhost_include_glob: /etc/httpd/managed/vhost.d/*.conf
+__httpd_vhost_include_glob: /etc/httpd/managed/vhosts.d/*.conf
 
 __httpd_module_dir: modules
 

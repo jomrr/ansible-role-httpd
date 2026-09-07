@@ -1,5 +1,5 @@
-# role: httpd
-# file: {{ __httpd_listen_config_path }}
+# Managed by ansible.
+# file: {{ template_destpath }}
 
 # ============================================================================
 # Apache HTTP Server global Listen configuration
@@ -14,16 +14,16 @@
 #   - Application VirtualHost definitions are managed separately.
 # ============================================================================
 
-{% for httpd_listener in httpd_listen %}
-{% set _httpd_listener_address = httpd_listener.address | default('') %}
-{% set _httpd_listener_protocol = (' ' ~ httpd_listener.protocol) if httpd_listener.protocol is defined and httpd_listener.protocol | length > 0 else '' %}
-{% if _httpd_listener_address | length > 0 %}
-{% if ':' in _httpd_listener_address and not _httpd_listener_address.startswith('[') %}
-Listen [{{ _httpd_listener_address }}]:{{ httpd_listener.port }}{{ _httpd_listener_protocol }}
+{% for __httpd_listener in httpd_listen %}
+{% set __httpd_listener_address = __httpd_listener.address | default('') %}
+{% set __httpd_listener_protocol = (' ' ~ __httpd_listener.protocol) if __httpd_listener.protocol is defined and __httpd_listener.protocol | length > 0 else '' %}
+{% if __httpd_listener_address | length > 0 %}
+{% if ':' in __httpd_listener_address and not __httpd_listener_address.startswith('[') %}
+Listen [{{ __httpd_listener_address }}]:{{ __httpd_listener.port }}{{ __httpd_listener_protocol }}
 {% else %}
-Listen {{ _httpd_listener_address }}:{{ httpd_listener.port }}{{ _httpd_listener_protocol }}
+Listen {{ __httpd_listener_address }}:{{ __httpd_listener.port }}{{ __httpd_listener_protocol }}
 {% endif %}
 {% else %}
-Listen {{ httpd_listener.port }}{{ _httpd_listener_protocol }}
+Listen {{ __httpd_listener.port }}{{ __httpd_listener_protocol }}
 {% endif %}
 {% endfor %}

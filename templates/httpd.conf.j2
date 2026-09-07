@@ -1,21 +1,5 @@
-{% macro httpd_quote(value) -%}
-"{{ value | string | replace('"', '\\"') }}"
-{%- endmacro %}
-{% macro httpd_custom_log_target(custom_log) -%}
-{{ httpd_quote(custom_log.file) if custom_log.file is defined else httpd_quote('|' ~ custom_log.pipe) }}
-{%- endmacro %}
-{% macro httpd_custom_log_format(custom_log) -%}
-{{ custom_log.format_name if custom_log.format_name is defined else httpd_quote(custom_log.format_string) }}
-{%- endmacro %}
-{% macro httpd_custom_log_condition(custom_log) -%}
-{% if custom_log.condition is defined and custom_log.condition.env is defined -%}
- env={% if custom_log.condition.negate | default(false) | bool %}!{% endif %}{{ custom_log.condition.env }}
-{%- elif custom_log.condition is defined and custom_log.condition.expr is defined -%}
- {{ httpd_quote('expr=' ~ custom_log.condition.expr) }}
-{%- endif %}
-{%- endmacro %}
-# role: httpd
-# file: {{ __httpd_main_config_path }}
+# Managed by ansible.
+# file: {{ template_destpath }}
 
 # ============================================================================
 # Apache HTTP Server main configuration file
@@ -64,34 +48,44 @@ ErrorLog                "{{ __httpd_error_log }}"
 LogLevel                {{ httpd_log_level }}
 
 <IfModule log_config_module>
-{% for httpd_log_format in httpd_log_formats %}
-    LogFormat {{ httpd_quote(httpd_log_format.format) }} {{ httpd_log_format.name }}
+{% for __httpd_log_format in httpd_log_formats %}
+    LogFormat "{{ __httpd_log_format.format | replace('"', '\\"') }}" {{ __httpd_log_format.name }}
 {% endfor %}
     CustomLog "{{ __httpd_access_log }}" combined
-{% for httpd_custom_log in httpd_custom_logs %}
-    CustomLog {{ httpd_custom_log_target(httpd_custom_log) }} {{ httpd_custom_log_format(httpd_custom_log) }}{{ httpd_custom_log_condition(httpd_custom_log) }}
+{% for __httpd_custom_log in httpd_custom_logs %}
+{% set __httpd_custom_log_target =
+    __httpd_custom_log.file if __httpd_custom_log.file is defined else '|' ~ __httpd_custom_log.pipe
+%}
+{% set __httpd_custom_log_format =
+    __httpd_custom_log.format_name if __httpd_custom_log.format_name is defined
+    else '"' ~ (__httpd_custom_log.format_string | replace('"', '\\"')) ~ '"'
+%}
+    CustomLog "{{ __httpd_custom_log_target | replace('"', '\\"') }}" {{ __httpd_custom_log_format }}
+{%- if __httpd_custom_log.condition.env is defined %} env={{ '!' if __httpd_custom_log.condition.negate | default(false) | bool else '' }}{{ __httpd_custom_log.condition.env }}
+{%- elif __httpd_custom_log.condition.expr is defined %} "expr={{ __httpd_custom_log.condition.expr | replace('"', '\\"') }}"
+{%- endif +%}
 {% endfor %}
 </IfModule>
 
 # Deny everything by default. Virtual hosts must explicitly allow what they need.
-{% for httpd_directory_block in httpd_directory_blocks %}
-{% if httpd_directory_block.path == '/' %}
+{% for __httpd_directory_block in httpd_directory_blocks %}
+{% if __httpd_directory_block.path == '/' %}
 <Directory />
 {% else %}
-<Directory "{{ httpd_directory_block.path }}">
+<Directory "{{ __httpd_directory_block.path }}">
 {% endif %}
-    AllowOverride {{ httpd_directory_block.allow_override }}
-    Options {{ httpd_directory_block.options }}
-{% for httpd_require_rule in httpd_directory_block.require %}
-    Require {{ httpd_require_rule }}
+    AllowOverride {{ __httpd_directory_block.allow_override }}
+    Options {{ __httpd_directory_block.options }}
+{% for __httpd_require_rule in __httpd_directory_block.require %}
+    Require {{ __httpd_require_rule }}
 {% endfor %}
 </Directory>
 
 {% endfor %}
-{% for httpd_files_block in httpd_files_blocks %}
-<Files "{{ httpd_files_block.pattern }}">
-{% for httpd_require_rule in httpd_files_block.require %}
-    Require {{ httpd_require_rule }}
+{% for __httpd_files_block in httpd_files_blocks %}
+<Files "{{ __httpd_files_block.pattern }}">
+{% for __httpd_require_rule in __httpd_files_block.require %}
+    Require {{ __httpd_require_rule }}
 {% endfor %}
 </Files>
 
@@ -99,8 +93,8 @@ LogLevel                {{ httpd_log_level }}
 {% if httpd_mime_enabled | bool %}
 <IfModule mime_module>
     TypesConfig {{ __httpd_types_config }}
-{% for httpd_mime_type in httpd_mime_types %}
-    AddType {{ httpd_mime_type.content_type }} {{ httpd_mime_type.extensions | join(' ') }}
+{% for __httpd_mime_type in httpd_mime_types %}
+    AddType {{ __httpd_mime_type.content_type }} {{ __httpd_mime_type.extensions | join(' ') }}
 {% endfor %}
 </IfModule>
 

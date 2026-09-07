@@ -1,5 +1,5 @@
-# role: httpd
-# file: {{ __httpd_tls_config_path }}
+# Managed by ansible.
+# file: {{ template_destpath }}
 
 # ============================================================================
 # Apache HTTP Server global TLS context
@@ -21,16 +21,6 @@ SSLStrictSNIVHostCheck  {{ 'On' if httpd_strict_host_check | bool else 'Off' }}
 SSLUseStapling          {{ httpd_tls_use_stapling }}
 SSLStaplingCache        {{ __httpd_tls_stapling_cache }}
 
-{% for httpd_tls_random_seed in httpd_tls_random_seeds %}
-{% set _httpd_tls_random_seed_parts = [
-    'SSLRandomSeed',
-    httpd_tls_random_seed.context,
-    httpd_tls_random_seed.source,
-] %}
-{% if httpd_tls_random_seed.bytes is defined %}
-{% set _httpd_tls_random_seed_parts = _httpd_tls_random_seed_parts + [
-    httpd_tls_random_seed.bytes | string,
-] %}
-{% endif %}
-{{ _httpd_tls_random_seed_parts | join(' ') }}
+{% for __httpd_tls_random_seed in httpd_tls_random_seeds %}
+SSLRandomSeed {{ __httpd_tls_random_seed.context }} {{ __httpd_tls_random_seed.source }}{% if __httpd_tls_random_seed.bytes is defined %} {{ __httpd_tls_random_seed.bytes }}{% endif +%}
 {% endfor %}

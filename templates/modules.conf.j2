@@ -1,5 +1,5 @@
-# role: httpd
-# file: {{ __httpd_modules_config_path }}
+# Managed by ansible.
+# file: {{ template_destpath }}
 
 # ============================================================================
 # Apache HTTP Server module configuration
@@ -10,23 +10,11 @@
 #   configured extra modules.
 # ============================================================================
 
-{% macro render_load_module(httpd_module) -%}
-{% set _httpd_module_path = httpd_module.path | default(__httpd_module_dir ~ '/' ~ httpd_module.file, true) %}
-LoadModule {{ httpd_module.name }} {{ _httpd_module_path }}
-{%- endmacro %}
-{% if httpd_mpm in __httpd_mpm_modules %}
-{% set _httpd_mpm_module = __httpd_mpm_modules[httpd_mpm] %}
-{{ render_load_module(_httpd_mpm_module) }}
-
-{% endif %}
-{% for httpd_module in __httpd_minimal_modules %}
-{{ render_load_module(httpd_module) }}
-{% endfor %}
-{% if __httpd_has_https_listener | bool %}
-{% for httpd_module in __httpd_tls_modules %}
-{{ render_load_module(httpd_module) }}
-{% endfor %}
-{% endif %}
-{% for httpd_module in httpd_extra_modules %}
-{{ render_load_module(httpd_module) }}
+{% for __httpd_module in (
+    ([__httpd_mpm_modules[httpd_mpm]] if httpd_mpm in __httpd_mpm_modules else [])
+    + __httpd_minimal_modules
+    + (__httpd_tls_modules if 'https' in httpd_listen | map(attribute='protocol', default='http') else [])
+    + httpd_extra_modules
+) | unique(attribute='name', case_sensitive=true) %}
+LoadModule {{ __httpd_module.name }} {{ __httpd_module.path | default(__httpd_module_dir ~ '/' ~ __httpd_module.file, true) }}
 {% endfor %}

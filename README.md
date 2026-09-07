@@ -119,11 +119,11 @@ Effective `httpd -t -f` validation is skipped in check mode because first-run sy
 ## Service Behavior
 
 The role always ensures the Apache service is enabled and started.
-Managed configuration and default-deny certificate changes notify the `httpd_reload` handler, which reloads the service outside check mode.
+Managed configuration and default-deny certificate changes notify `reload`, handled by `HTTPD | Reload service`.
 
 ### Handlers
 
-- httpd_reload
+- HTTPD | Reload service
 
 ## Security Notes
 
@@ -138,12 +138,13 @@ Managed configuration and default-deny certificate changes notify the `httpd_rel
 
 ## Operational Notes
 
+- Idempotency: applying the same inputs to an already converged host makes no changes and does not reload the service.
 - Present application vhost files in `httpd_vhost_files` must use names sorting after `000-default-deny.conf`.
 - `httpd_listen` defaults to HTTP and HTTPS; mark additional HTTPS listeners with `protocol: https`.
 - Listener address and port endpoints in `httpd_listen` must be unique.
 - `httpd_custom_logs` entries require exactly one target (`file` or `pipe`), exactly one format (`format_name` or `format_string`), and optionally one condition (`env` or `expr`).
 - Add optional modules through `httpd_extra_modules`; required packages belong in `httpd_extra_packages`.
-- `httpd_extra_modules` names must be unique and must not duplicate role-required module names.
+- Module entries are deduplicated by name. The first entry wins; role-required modules take precedence over `httpd_extra_modules`.
 - On SUSE-family systems, the MPM is selected through `/etc/sysconfig/apache2`.
 
 ## Supported Platforms

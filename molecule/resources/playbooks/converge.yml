@@ -2,7 +2,7 @@
 # role: httpd
 # file: molecule/resources/playbooks/converge.yml
 
-- name: "Molecule | converge | httpd"
+- name: "HTTPD | Converge"
   hosts: all
   gather_facts: true
   roles:

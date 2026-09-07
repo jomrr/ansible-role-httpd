@@ -162,6 +162,16 @@ argument_specs:
         required: false
         default: []
         description: Additional global CustomLog entries.
+        mutually_exclusive:
+          - - file
+            - pipe
+          - - format_name
+            - format_string
+        required_one_of:
+          - - file
+            - pipe
+          - - format_name
+            - format_string
         options:
           file:
             type: path
@@ -178,6 +188,14 @@ argument_specs:
           condition:
             type: dict
             required: false
+            mutually_exclusive:
+              - - env
+                - expr
+              - - negate
+                - expr
+            required_one_of:
+              - - env
+                - expr
             options:
               env:
                 type: str
@@ -339,6 +357,10 @@ argument_specs:
         default: []
         description: Complete Apache-native virtual host files written into the managed
           vhost directory.
+        required_if:
+          - - state
+            - present
+            - - content
         options:
           name:
             type: str

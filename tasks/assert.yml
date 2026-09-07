@@ -2,106 +2,33 @@
 # role: httpd
 # file: tasks/assert.yml
 
-- name: "HTTPD | Assert listener policy"
+- name: "HTTPD | Assert vhost file names"
   ansible.builtin.assert:
     quiet: true
     that:
-      - httpd_listen is not defined or httpd_listen | length > 0
-    fail_msg: "httpd_listen must contain at least one listener."
+      - __httpd_vhost_file.name is match('^[A-Za-z0-9][A-Za-z0-9._-]*[.]conf$')
+      - __httpd_vhost_file.name != '000-default-deny.conf'
+    fail_msg: >-
+      Each vhost requires a relative .conf name and must not replace 000-default-deny.conf.
+  loop: "{{ httpd_vhost_files }}"
+  loop_control:
+    loop_var: __httpd_vhost_file
+    label: "{{ __httpd_vhost_file.name }}"
   tags:
     - httpd_assert
 
-- name: "HTTPD | Assert rendered LoadModule names are unique"
+- name: "HTTPD | Assert present vhost definitions"
   ansible.builtin.assert:
     quiet: true
     that:
-      - >-
-        __httpd_assert_required_module_names | length
-        == __httpd_assert_required_module_names | unique | list | length
-      - >-
-        __httpd_assert_extra_module_names | length
-        == __httpd_assert_extra_module_names | unique | list | length
-      - __httpd_assert_extra_module_names | intersect(__httpd_assert_required_module_names) | length == 0
-    fail_msg: >-
-      Rendered LoadModule names must be unique. httpd_extra_modules entries
-      must not duplicate each other or overlap role-required module names.
-  vars:
-    __httpd_assert_required_module_names: >-
-      {{
-        (
-          [(__httpd_mpm_modules | default({}))[httpd_mpm].name]
-          if httpd_mpm in (__httpd_mpm_modules | default({}))
-          else []
-        )
-        + (__httpd_minimal_modules | default([]) | map(attribute='name') | list)
-        + (
-          (__httpd_tls_modules | default([]) | map(attribute='name') | list)
-          if __httpd_has_https_listener | default(false) | bool
-          else []
-        )
-      }}
-    __httpd_assert_extra_module_names: "{{ httpd_extra_modules | default([]) | map(attribute='name') | list }}"
-  tags:
-    - httpd_assert
-
-- name: "HTTPD | Assert custom log model"
-  ansible.builtin.assert:
-    quiet: true
-    that:
-      - __httpd_invalid_custom_log_labels | length == 0
-    fail_msg: >-
-      httpd_custom_logs entries must not define competing targets, competing formats,
-      or ambiguous conditions. Use file or pipe, format_name or format_string,
-      and condition.env with optional negate or condition.expr. Invalid logs:
-      {{ __httpd_invalid_custom_log_labels }}.
-  vars:
-    __httpd_invalid_custom_log_labels: >-
-      {%- set ns = namespace(labels=[]) -%}
-      {%- for item in httpd_custom_logs | default([]) -%}
-      {%- set label = item.file | default(item.pipe | default('undefined custom log')) | string -%}
-      {%- set has_file = item.file is defined -%}
-      {%- set has_pipe = item.pipe is defined -%}
-      {%- set has_format_name = item.format_name is defined -%}
-      {%- set has_format_string = item.format_string is defined -%}
-      {%- set has_condition = item.condition is defined -%}
-      {%- set condition_is_mapping = not has_condition or item.condition is mapping -%}
-      {%- set has_env = condition_is_mapping and item.condition.env is defined -%}
-      {%- set has_expr = condition_is_mapping and item.condition.expr is defined -%}
-      {%- if (has_file and has_pipe)
-          or (has_format_name and has_format_string)
-          or not condition_is_mapping
-          or (has_condition and ((1 if has_env else 0) + (1 if has_expr else 0)) != 1)
-          or (condition_is_mapping and item.condition.negate is defined and not has_env) -%}
-      {%- set ns.labels = ns.labels + [label] -%}
-      {%- endif -%}
-      {%- endfor -%}
-      {{ ns.labels | join(', ') }}
-  tags:
-    - httpd_assert
-
-- name: "HTTPD | Assert vhost file definitions"
-  ansible.builtin.assert:
-    quiet: true
-    that:
-      - __httpd_invalid_vhost_file_labels | length == 0
-    fail_msg: >-
-      Every httpd_vhost_files item requires a relative .conf name, must not replace 000-default-deny.conf,
-      must sort after 000-default-deny.conf unless state=absent, and requires non-empty content unless state=absent.
-      Invalid vhost files: {{ __httpd_invalid_vhost_file_labels }}.
-  vars:
-    __httpd_invalid_vhost_file_labels: >-
-      {%- set ns = namespace(labels=[]) -%}
-      {%- for item in httpd_vhost_files | default([]) -%}
-      {%- set name = item.name | default('undefined vhost file') | string -%}
-      {%- set state = item.state | default('present') -%}
-      {%- if (item.name is defined and not (name is match('^[A-Za-z0-9][A-Za-z0-9._-]*\\.conf$')))
-          or name == '000-default-deny.conf'
-          or (state == 'present' and name <= '000-default-deny.conf')
-          or (state == 'present' and item.content is defined and item.content | string | trim | length == 0) -%}
-      {%- set ns.labels = ns.labels + [name] -%}
-      {%- endif -%}
-      {%- endfor -%}
-      {{ ns.labels | join(', ') }}
+      - __httpd_vhost_file.name > '000-default-deny.conf'
+      - __httpd_vhost_file.content | trim | length > 0
+    fail_msg: "Present vhosts must sort after 000-default-deny.conf and require non-empty content."
+  loop: "{{ httpd_vhost_files }}"
+  loop_control:
+    loop_var: __httpd_vhost_file
+    label: "{{ __httpd_vhost_file.name }}"
+  when: __httpd_vhost_file.state | default('present') == 'present'
   tags:
     - httpd_assert
 
@@ -109,18 +36,7 @@
   ansible.builtin.assert:
     quiet: true
     that:
-      - >-
-        __httpd_vhost_file_names | length
-        == __httpd_vhost_file_names | unique | list | length
+      - httpd_vhost_files | length == httpd_vhost_files | map(attribute='name') | unique | list | length
     fail_msg: "httpd_vhost_files must not contain duplicate file names."
-  vars:
-    __httpd_vhost_file_names: >-
-      {{
-        httpd_vhost_files
-        | default([])
-        | selectattr('name', 'defined')
-        | map(attribute='name')
-        | list
-      }}
   tags:
     - httpd_assert

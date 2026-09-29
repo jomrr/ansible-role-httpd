@@ -24,6 +24,8 @@ service.
 - Apache HTTP Server packages
 - Additional platform packages explicitly requested through
   `httpd_extra_packages`
+- Persistent SELinux booleans explicitly configured through `httpd_sebooleans`
+  and their Python bindings
 - Global Apache main configuration
 - Explicit module loading
 - Global listener configuration
@@ -38,6 +40,7 @@ service.
 ### Not Managed
 
 - Firewall policy
+- SELinux enablement, enforcement mode, file contexts, or port policy
 - Public or internally trusted certificate issuance
 - ACME, CA integration, renewal, or OCSP lifecycle
 - PHP-FPM package, pool, or service management
@@ -56,6 +59,8 @@ service.
 
 ```yaml
 collections:
+  - name: ansible.posix
+    version: '>=2.0.0'
   - name: community.general
     version: '>=12.0.0'
   - name: community.crypto
@@ -75,6 +80,19 @@ Default:
 
 ```yaml
 httpd_extra_packages: []
+```
+
+### `httpd_sebooleans`
+
+Type: `dict`. Required: `false`.
+
+Mapping of SELinux boolean names to boolean values, managed persistently only
+when SELinux is enabled.
+
+Default:
+
+```yaml
+httpd_sebooleans: {}
 ```
 
 ### `httpd_default_vhost_server_name`
@@ -473,8 +491,8 @@ httpd_vhost_files: []
 - `/etc/httpd/managed/modules.d/00-modules.conf`
 - `/etc/httpd/managed/conf.d/00-listen.conf`
 - `/etc/httpd/managed/conf.d/00-tls.conf`
-- `/etc/httpd/managed/vhost.d/000-default-deny.conf`
-- `/etc/httpd/managed/vhost.d/*.conf` for declared `httpd_vhost_files`
+- `/etc/httpd/managed/vhosts.d/000-default-deny.conf`
+- `/etc/httpd/managed/vhosts.d/*.conf` for declared `httpd_vhost_files`
 - `/etc/httpd/managed/tls/certs/httpd-default-deny.crt` when HTTPS listeners are
   configured
 - `/etc/httpd/managed/tls/private/httpd-default-deny.key` when HTTPS listeners
@@ -485,8 +503,8 @@ httpd_vhost_files: []
 - `/etc/apache2/managed/modules.d/00-modules.conf`
 - `/etc/apache2/managed/conf.d/00-listen.conf`
 - `/etc/apache2/managed/conf.d/00-tls.conf`
-- `/etc/apache2/managed/vhost.d/000-default-deny.conf`
-- `/etc/apache2/managed/vhost.d/*.conf` for declared `httpd_vhost_files`
+- `/etc/apache2/managed/vhosts.d/000-default-deny.conf`
+- `/etc/apache2/managed/vhosts.d/*.conf` for declared `httpd_vhost_files`
 - `/etc/apache2/managed/tls/certs/httpd-default-deny.crt` when HTTPS listeners
   are configured
 - `/etc/apache2/managed/tls/private/httpd-default-deny.key` when HTTPS listeners
@@ -505,6 +523,9 @@ These skipped steps do not report predicted changes, including on already
 configured hosts.
 Effective `httpd -t -f` validation is also skipped because first-run systems may
 not have the Apache binary or include files yet.
+SELinux binding packages participate in check mode, but boolean changes are
+skipped because the bindings may only be simulated as installed.
+Boolean changes are therefore not predicted, even on already configured hosts.
 
 ## Service Behavior
 
@@ -515,6 +536,7 @@ so MPM changes replace the Apache parent process.
 Other managed configuration and default-deny certificate changes notify
 `reload`, handled by `HTTPD | Reload service`.
 When both handlers are notified, the restart runs before the reload.
+SELinux boolean changes do not notify a service handler.
 
 ### Handlers
 
@@ -523,6 +545,11 @@ When both handlers are notified, the restart runs before the reload.
 
 ## Security Notes
 
+- `httpd_sebooleans` defaults to an empty mapping. Only listed booleans are
+  managed, always persistently; unlisted booleans remain unchanged. Both
+  Enforcing and Permissive are supported without changing the SELinux mode.
+  Systems with SELinux disabled skip boolean management and its binding
+  packages.
 - Distribution package include wildcards are intentionally not included.
 - The default-deny vhost is rendered as `000-default-deny.conf` so it sorts
   before normal vhost files.
@@ -563,6 +590,10 @@ When both handlers are notified, the restart runs before the reload.
 - Module entries are deduplicated by name. The first entry wins; role-required
   modules take precedence over `httpd_extra_modules`.
 - On SUSE-family systems, the MPM is selected through `/etc/sysconfig/apache2`.
+- With active SELinux and a nonempty `httpd_sebooleans` mapping, the role
+  installs `python3-libselinux` and `python3-libsemanage` on RedHat, or
+  `python3-selinux` and `python3-semanage` on Debian and Suse, before managing
+  booleans.
 
 ## Supported Platforms
 
@@ -576,6 +607,23 @@ When both handlers are notified, the restart runs before the reload.
 | Debian | Ubuntu | latest | [jomrr/molecule-ubuntu:latest](https://hub.docker.com/r/jomrr/molecule-ubuntu) |
 
 ## Example Playbook
+
+### Persistent SELinux booleans
+
+Manage explicit SELinux booleans persistently on enabled hosts.
+
+```yaml
+---
+- name: Configure Apache HTTP Server and SELinux booleans
+  hosts: httpd
+  gather_facts: true
+  roles:
+    - role: jomrr.httpd
+      vars:
+        httpd_sebooleans:
+          httpd_can_network_connect: true
+          httpd_can_network_connect_db: false
+```
 
 ### Simple example playbook
 

@@ -3,6 +3,8 @@
 # file: handlers/main.yml
 
 - name: "HTTPD | Restart service"
+  become: true
+  become_user: root
   ansible.builtin.service:
     name: "{{ __httpd_service_name }}"
     state: restarted
@@ -10,6 +12,8 @@
   listen: restart
 
 - name: "HTTPD | Reload service"
+  become: true
+  become_user: root
   ansible.builtin.service:
     name: "{{ __httpd_service_name }}"
     state: reloaded

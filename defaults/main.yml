@@ -5,6 +5,13 @@
 # Installs additional platform-specific packages required by explicitly enabled extra modules or local policy.
 httpd_extra_packages: []
 
+# Sets explicitly configured SELinux booleans persistently when SELinux is enabled.
+httpd_sebooleans: {}
+# Example:
+# httpd_sebooleans:
+#   httpd_can_network_connect: true
+#   httpd_can_network_connect_db: false
+
 # Sets the ServerName used by the security-only default-deny virtual host.
 httpd_default_vhost_server_name: default.invalid
 

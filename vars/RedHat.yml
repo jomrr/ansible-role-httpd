@@ -6,6 +6,10 @@ __httpd_packages:
   - httpd
   - mod_ssl
 
+__httpd_selinux_packages:
+  - python3-libselinux
+  - python3-libsemanage
+
 __httpd_default_vhost_certificate_packages:
   - python3-cryptography
 

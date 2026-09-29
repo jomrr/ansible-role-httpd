@@ -17,6 +17,12 @@ argument_specs:
         default: []
         description: Additional platform packages required by explicitly enabled modules
           or local policy.
+      httpd_sebooleans:
+        type: dict
+        required: false
+        default: {}
+        description: Mapping of SELinux boolean names to boolean values, managed persistently
+          only when SELinux is enabled.
       httpd_default_vhost_server_name:
         type: str
         required: false

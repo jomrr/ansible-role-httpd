@@ -3,6 +3,8 @@
 # file: tasks/config.yml
 
 - name: "HTTPD | Ensure managed directories exist"
+  become: true
+  become_user: root
   ansible.builtin.file:
     path: "{{ __httpd_directory.path }}"
     state: directory
@@ -17,6 +19,8 @@
     - httpd_config
 
 - name: "HTTPD | Generate default-deny private key"
+  become: true
+  become_user: root
   community.crypto.openssl_privatekey:
     path: "{{ __httpd_default_vhost_certificate_key_file }}"
     type: RSA
@@ -34,6 +38,8 @@
     - httpd_tls
 
 - name: "HTTPD | Generate default-deny certificate signing request"
+  become: true
+  become_user: root
   community.crypto.openssl_csr:
     path: "{{ __httpd_default_vhost_certificate_csr_file }}"
     privatekey_path: "{{ __httpd_default_vhost_certificate_key_file }}"
@@ -81,6 +87,8 @@
     - httpd_tls
 
 - name: "HTTPD | Manage SUSE MPM selection"
+  become: true
+  become_user: root
   ansible.builtin.lineinfile:
     backup: true
     path: "{{ __httpd_suse_sysconfig_path }}"
@@ -98,6 +106,8 @@
     - httpd_config
 
 - name: "HTTPD | Manage explicit module configuration"
+  become: true
+  become_user: root
   ansible.builtin.template:
     backup: true
     src: modules.conf.j2
@@ -110,6 +120,8 @@
     - httpd_config
 
 - name: "HTTPD | Manage global listener configuration"
+  become: true
+  become_user: root
   ansible.builtin.template:
     backup: true
     src: listen.conf.j2
@@ -122,6 +134,8 @@
     - httpd_config
 
 - name: "HTTPD | Manage global TLS context"
+  become: true
+  become_user: root
   ansible.builtin.template:
     backup: true
     src: tls.conf.j2
@@ -136,6 +150,8 @@
     - httpd_tls
 
 - name: "HTTPD | Remove global TLS context when no HTTPS listener exists"
+  become: true
+  become_user: root
   ansible.builtin.file:
     path: "{{ __httpd_tls_config_path }}"
     state: absent
@@ -146,6 +162,8 @@
     - httpd_tls
 
 - name: "HTTPD | Manage default-deny virtual host"
+  become: true
+  become_user: root
   ansible.builtin.template:
     backup: true
     src: default-vhost.conf.j2
@@ -158,6 +176,8 @@
     - httpd_config
 
 - name: "HTTPD | Remove absent application virtual host files"
+  become: true
+  become_user: root
   ansible.builtin.file:
     path: "{{ __httpd_vhost_dir }}/{{ __httpd_vhost_file.name }}"
     state: absent
@@ -171,6 +191,8 @@
     - httpd_config
 
 - name: "HTTPD | Manage application virtual host files"
+  become: true
+  become_user: root
   ansible.builtin.copy:
     backup: true
     dest: "{{ __httpd_vhost_dir }}/{{ __httpd_vhost_file.name }}"
@@ -189,6 +211,8 @@
     - httpd_config
 
 - name: "HTTPD | Manage main configuration"
+  become: true
+  become_user: root
   ansible.builtin.template:
     backup: true
     src: httpd.conf.j2
@@ -202,6 +226,8 @@
     - httpd_config
 
 - name: "HTTPD | Validate effective configuration"
+  become: true
+  become_user: root
   ansible.builtin.command:
     argv:
       - "{{ __httpd_binary }}"

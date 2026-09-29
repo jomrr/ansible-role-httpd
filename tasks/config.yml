@@ -68,6 +68,8 @@
     - httpd_tls
 
 - name: "HTTPD | Generate default-deny self-signed certificate"
+  become: true
+  become_user: root
   community.crypto.x509_certificate:
     path: "{{ __httpd_default_vhost_certificate_file }}"
     privatekey_path: "{{ __httpd_default_vhost_certificate_key_file }}"

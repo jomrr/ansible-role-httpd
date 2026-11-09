@@ -30,10 +30,6 @@ __httpd_managed_directories:
     mode: "0755"
   - path: /etc/apache2/managed/tls/private
     mode: "0700"
-  - path: /var/cache/apache2
-    mode: "0755"
-  - path: /var/log/apache2
-    mode: "0755"
   - path: /run/apache2
     mode: "0755"
 

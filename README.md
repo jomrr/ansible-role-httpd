@@ -564,11 +564,22 @@ SELinux boolean changes do not notify a service handler.
 - TLS certificates for application vhosts are not issued, renewed, or deployed
   by this role.
 - Logs are written below `/var/log`, not below `/etc`.
+- Distribution ownership and permissions of log and cache directories are
+  preserved. This avoids widening access to logs and removing the service user's
+  access to its cache.
 
 ## Operational Notes
 
 - Idempotency: applying the same inputs to an already converged host makes no
   changes and does not restart or reload the service.
+- Log and cache directories are provided by the distribution packages. On
+  RedHat-family systems, the package and its tmpfiles rules also provide
+  `/run/httpd`; the role manages directories only below `/etc/httpd/managed/`.
+  On Debian and SUSE families, the role additionally creates `/run/apache2` as
+  `root:root 0755` because direct configuration validation requires it before
+  service start. Debian's `apachectl` creates it when invoked, while SUSE
+  packages use `/run` rather than the role's `/run/apache2` path. Permissions
+  changed by earlier role versions are not restored automatically.
 - The role writes module, listener, TLS, and vhost changes before validating the
   main and complete configuration. A validation failure stops the role before
   service start or handler execution; files already written remain on disk, with

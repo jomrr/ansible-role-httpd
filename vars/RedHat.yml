@@ -30,12 +30,6 @@ __httpd_managed_directories:
     mode: "0755"
   - path: /etc/httpd/managed/tls/private
     mode: "0700"
-  - path: /var/cache/httpd
-    mode: "0755"
-  - path: /var/log/httpd
-    mode: "0755"
-  - path: /run/httpd
-    mode: "0755"
 
 __httpd_main_config_path: /etc/httpd/conf/httpd.conf
 __httpd_modules_config_path: /etc/httpd/managed/modules.d/00-modules.conf

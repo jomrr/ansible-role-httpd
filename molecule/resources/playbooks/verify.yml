@@ -7,6 +7,46 @@
   gather_facts: true
   vars:
     __httpd_verify_role_path: "{{ lookup('ansible.builtin.env', 'MOLECULE_PROJECT_DIRECTORY') }}"
+    __httpd_verify_directory_permissions:
+      RedHat:
+        - path: /var/log/httpd
+          owner: root
+          group: root
+          mode: '0700'
+        - path: /var/cache/httpd
+          owner: apache
+          group: apache
+          mode: '0700'
+        - path: /run/httpd
+          owner: root
+          group: apache
+          mode: '0710'
+      Debian:
+        - path: /var/log/apache2
+          owner: root
+          group: adm
+          mode: '0750'
+        - path: /var/cache/apache2
+          owner: root
+          group: root
+          mode: '0755'
+        - path: /run/apache2
+          owner: root
+          group: root
+          mode: '0755'
+      Suse:
+        - path: /var/log/apache2
+          owner: root
+          group: root
+          mode: '0750'
+        - path: /var/cache/apache2
+          owner: wwwrun
+          group: root
+          mode: '0750'
+        - path: /run/apache2
+          owner: root
+          group: root
+          mode: '0755'
 
   tasks:
     - name: "HTTPD | Load role defaults for verification"
@@ -16,6 +56,29 @@
 
     - name: "HTTPD | Load platform variables for log verification"
       ansible.builtin.include_vars: "{{ __httpd_verify_role_path }}/vars/{{ ansible_facts.os_family }}.yml"
+
+    - name: "HTTPD | Read log, cache and runtime directory permissions"
+      ansible.builtin.stat:
+        path: "{{ __httpd_verify_directory.path }}"
+      loop: "{{ __httpd_verify_directory_permissions[ansible_facts.os_family] }}"
+      loop_control:
+        loop_var: __httpd_verify_directory
+        label: "{{ __httpd_verify_directory.path }}"
+      register: __httpd_verify_directories
+
+    - name: "HTTPD | Assert log, cache and runtime directory permissions"
+      ansible.builtin.assert:
+        quiet: true
+        that:
+          - __httpd_verify_directory_result.stat.exists
+          - __httpd_verify_directory_result.stat.isdir
+          - __httpd_verify_directory_result.stat.pw_name == __httpd_verify_directory_result.__httpd_verify_directory.owner
+          - __httpd_verify_directory_result.stat.gr_name == __httpd_verify_directory_result.__httpd_verify_directory.group
+          - __httpd_verify_directory_result.stat.mode == __httpd_verify_directory_result.__httpd_verify_directory.mode
+      loop: "{{ __httpd_verify_directories.results }}"
+      loop_control:
+        loop_var: __httpd_verify_directory_result
+        label: "{{ __httpd_verify_directory_result.__httpd_verify_directory.path }}"
 
     - name: "HTTPD | Assert default-deny HTTP host is forbidden"
       ansible.builtin.uri:

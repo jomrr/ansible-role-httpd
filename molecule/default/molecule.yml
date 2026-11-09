@@ -14,17 +14,12 @@ provisioner:
       interpreter_python: "auto_silent"
       callbacks_enabled: "ansible.posix.profile_tasks,ansible.posix.timer"
       callback_result_format: "yaml"
-    ssh_connection:
+    connection:
       pipelining: true
-  log: true
-  playbooks:
-    prepare: "../resources/playbooks/prepare.yml"
-    converge: "../resources/playbooks/converge.yml"
-    verify: "../resources/playbooks/verify.yml"
-    side_effect: "../resources/playbooks/side_effect.yml"
   inventory:
     group_vars:
       all:
+        ansible_podman_mount_detection: false
         httpd_sebooleans:
           httpd_can_network_connect: true
           httpd_can_network_connect_db: false
@@ -60,6 +55,12 @@ provisioner:
                   ServerName proxy.molecule.example
                   ProxyPass / http://127.0.0.1:8081/
               </VirtualHost>
+  log: true
+  playbooks:
+    prepare: "../resources/playbooks/prepare.yml"
+    converge: "../resources/playbooks/converge.yml"
+    verify: "../resources/playbooks/verify.yml"
+    side_effect: "../resources/playbooks/side_effect.yml"
 verifier:
   name: "ansible"
 scenario:
